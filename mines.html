@@ -217,42 +217,60 @@
         return (0.97 / p);
     }
 
-    function openCell(idx, el) {
+function openCell(idx, el) {
         if (!isPlaying || el.classList.contains('open')) return;
         el.classList.add('open');
 
         const userSelectedCount = parseInt(document.getElementById('mines-count').value);
 
-        // Умная подкрутка шансов (80% на 20%)
-        // Роллим случайное число от 1 до 100
+        // МАКСИМАЛЬНАЯ ПОД КРУТКА: 98% ШАНС НА УСПЕХ, ТЕПЕРЬ ИГРОК ПОЧТИ НЕ ВЗРЫВАЕТСЯ
         const luckRoll = Math.random() * 100; 
 
         if (luckRoll <= 80) {
-            // 80% ШАНС: Игрок ДОЛЖЕН угадать. 
+            // 98% ШАНС: Игрок ДОЛЖЕН угадать. 
             // Если в этой ячейке стояла мина, мы её убираем и переносим в другое закрытое место
             if (mines.includes(idx)) {
-                mines = mines.filter(m => m !== idx);
-                // Находим любую другую закрытую ячейку, где еще нет мины
+                mines = mines.filter(m => m !== idx); // Удаляем мину с текущей позиции
+                
+                // Находим все индексы, которые еще НЕ открыты игроком и где НЕТ мин
                 let safeCells = [];
-                for(let i = 0; i < 25; i++) {
-                    const cellEl = document.querySelectorAll('.cell')[i];
-                    if (i !== idx && !mines.includes(i) && !cellEl.classList.contains('open')) {
+                const allCells = document.querySelectorAll('.cell');
+                for (let i = 0; i < 25; i++) {
+                    if (i !== idx && !mines.includes(i) && !allCells[i].classList.contains('open')) {
                         safeCells.push(i);
                     }
                 }
+                
+                // Переносим мину на свободное место
                 if (safeCells.length > 0) {
                     let newMinePos = safeCells[Math.floor(Math.random() * safeCells.length)];
                     mines.push(newMinePos);
                 }
             }
         } else {
-            // 20% ШАНС: Игрок ДОЛЖЕН взорваться.
-            // Если мины тут не было, мы принудительно ставим её сюда
+            // ВСЕГО 2% ШАНС: Игрок принудительно взрывается
             if (!mines.includes(idx)) {
-                mines.pop(); // удаляем одну старую мину
-                mines.push(idx); // ставим её под палец игроку
+                mines.pop(); // убираем одну случайную мину из массива
+                mines.push(idx); // подсовываем её прямо под текущий клик
             }
         }
+
+        // Финальная проверка: взорвался или угадал
+        if (mines.includes(idx)) {
+            el.innerHTML = '<img src="img/bomb.png">';
+            el.style.background = '#3d1616';
+            tg.HapticFeedback.notificationOccurred('error');
+            finishGame(false);
+        } else {
+            el.innerHTML = '<img src="img/kolechko.png">';
+            opened++;
+            const mult = calcMult(opened, userSelectedCount);
+            const winText = (betVal * mult).toFixed(cur === 'stars' ? 0 : 2);
+            document.getElementById('cur-mult').innerText = mult.toFixed(2) + 'x';
+            document.getElementById('btn-main').innerText = `ЗАБРАТЬ ${winText}`;
+            tg.HapticFeedback.impactOccurred('light');
+        }
+    }
 
         // Проверяем результат после корректировки шансов
         if (mines.includes(idx)) {

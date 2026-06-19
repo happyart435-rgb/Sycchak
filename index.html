@@ -17,7 +17,6 @@
             --glow-gold: rgba(245, 176, 37, 0.18); 
         }
 
-        /* Настройки глобального экрана десктопа */
         html, body {
             margin: 0; 
             padding: 0;
@@ -25,9 +24,6 @@
             height: 100%;
             background: radial-gradient(circle at 50% 30%, #513e11 0%, #0f0a02 75%); 
             overflow: hidden;
-            display: flex;
-            justify-content: center; /* Центрируем игру по горизонтали на ПК */
-            align-items: center;     /* Центрируем игру по вертикали на ПК */
         }
 
         body { 
@@ -42,10 +38,10 @@
 
         body.loaded { opacity: 1; }
 
-        /* Блокировщик ПК (Теперь отключен, так как мы адаптировали под ПК) */
+        /* Блокировщик ПК полностью отключаем для стрима */
         #pc-only-blocker { display: none !important; }
 
-        /* Холст со звездами на заднем плане всего монитора */
+        /* Холст со звездами на весь экран стрима */
         #stars-canvas { 
             position: fixed; 
             top: 0; 
@@ -56,24 +52,20 @@
             pointer-events: none; 
         }
         
-        /* Главный контейнер игры (Имитация экрана телефона на ПК) */
+        /* Главный контейнер ТЕПЕРЬ НА ВЕСЬ ЭКРАН (Фулл резина) */
         .main-wrapper { 
-            background: rgba(15, 10, 2, 0.4); /* Слегка затемняем мобильную область */
             width: 100%;
-            max-width: 450px; /* Ограничение ширины на десктопе */
-            height: 100%;
-            max-height: 100vh;
+            height: 100vh;
             display: flex; 
             flex-direction: column; 
             position: relative; 
             z-index: 2; 
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8); /* Тень игры на ПК */
         }
 
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
-            padding: 24px 24px 110px 24px;
+            padding: 24px 24px 120px 24px;
             scrollbar-width: none;
         }
         .scrollable-content::-webkit-scrollbar { display: none; }
@@ -88,32 +80,33 @@
         @keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         .hero-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 220px; background: radial-gradient(circle, var(--glow-gold) 0%, transparent 70%); z-index: -1; filter: blur(30px); }
 
-        /* Кнопки меню (Карточки) */
+        /* Кнопки меню стали резиновыми флекс-элементами */
         .game-card {
             background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
             border: 1px solid rgba(245, 176, 37, 0.18);
             border-radius: 24px;
-            padding: 16px;
+            padding: 20px;
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 12px;
+            gap: 20px;
+            margin-bottom: 16px;
             transition: all 0.2s;
             position: relative;
             overflow: hidden;
             cursor: pointer;
+            width: 100%;
         }
-        .game-card:active { transform: scale(0.96); background: rgba(245, 176, 37, 0.08); border-color: rgba(245, 176, 37, 0.45); }
-        .game-card img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 0 14px rgba(245, 176, 37, 0.35)); }
-        .card-title { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; line-height: 1; letter-spacing: -0.5px; color: #fff; }
-        .card-desc { font-size: 10px; font-weight: 700; color: #f5b025; text-transform: uppercase; opacity: 0.8; margin-top: 4px; }
+        .game-card:active { transform: scale(0.98); background: rgba(245, 176, 37, 0.08); border-color: rgba(245, 176, 37, 0.45); }
+        .game-card img { width: 64px; height: 64px; object-fit: contain; filter: drop-shadow(0 0 14px rgba(245, 176, 37, 0.35)); }
+        .card-title { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 20px; line-height: 1; letter-spacing: -0.5px; color: #fff; }
+        .card-desc { font-size: 12px; font-weight: 700; color: #f5b025; text-transform: uppercase; opacity: 0.8; margin-top: 4px; }
 
-        /* Модалки */
-        .modal-base { position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); z-index: 2000; display: none; align-items: flex-end; }
+        /* Модалки на весь экран стрима */
+        .modal-base { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); z-index: 2000; display: none; align-items: flex-end; }
         .modal-sheet { background: #231906; width: 100%; border-radius: 35px 35px 0 0; padding: 30px 24px 60px 24px; border-top: 2px solid var(--accent-gold); }
         
-        /* Навигация (Привязана к низу .main-wrapper) */
-        .dock-bar { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(15, 10, 2, 0.95); border-top: 1px solid rgba(245, 176, 37, 0.18); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
+        /* Навигация фиксированная в самом низу окна стрима */
+        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15, 10, 2, 0.95); border-top: 1px solid rgba(245, 176, 37, 0.18); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
         .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #736b5d; flex: 1; text-decoration: none; cursor: pointer; }
         .dock-btn.active { color: var(--accent-gold); filter: drop-shadow(0 0 5px rgba(245, 176, 37, 0.55)); }
         

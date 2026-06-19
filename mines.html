@@ -126,7 +126,7 @@
     </aside>
 
 <script>
-    const tg = window.Telegram.WebApp;
+const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
@@ -136,6 +136,10 @@
 
     let currentUser = null, cur = 'stars', isPlaying = false;
     let mines = [], opened = 0, betVal = 0;
+
+    // СИСТЕМА КОНТРОЛЯ ВИНРЕЙТА (3 ИЗ 5)
+    // Храним историю последних игр: true — победа, false — поражение
+    let gameHistory = []; 
 
     async function checkAuth() {
         const userId = tg.initDataUnsafe?.user?.id || '8015661230'; 
@@ -200,11 +204,15 @@
             renderGrid();
             tg.HapticFeedback.impactOccurred('medium');
         } else {
+            // Игрок сам нажал "ЗАБРАТЬ" — это чистая победа
             const mult = calcMult(opened, parseInt(document.getElementById('mines-count').value));
             const win = betVal * mult;
             const { data: user } = await SB.from('users').select(col).eq('user_id', currentUser.user_id).single();
             await SB.from('users').update({ [col]: user[col] + win }).eq('user_id', currentUser.user_id);
             tg.HapticFeedback.notificationOccurred('success');
+            
+            // Записываем победу в историю
+            recordGameResult(true);
             finishGame(true);
         }
     }
@@ -216,15 +224,43 @@
         return (0.97 / p);
     }
 
+    // Функция ведения статистики циклов по 5 игр
+    function recordGameResult(isWin) {
+        gameHistory.push(isWin);
+        if (gameHistory.length > 5) {
+            gameHistory.shift(); // Оставляем только последние 5 игр
+        }
+        console.log("Текущая история (последние 5):", gameHistory);
+    }
+
     function openCell(idx, el) {
         if (!isPlaying || el.classList.contains('open')) return;
         el.classList.add('open');
 
         const userSelectedCount = parseInt(document.getElementById('mines-count').value);
-        const luckRoll = Math.random() * 100; 
+        
+        // Считаем сколько побед уже было в этой серии из 5 игр
+        const winsInSeries = gameHistory.filter(win => win === true).length;
+        const totalGamesInSeries = gameHistory.length;
 
-        if (luckRoll <= 80) {
-            // 80% ШАНС: Игрок угадывает. Если тут была мина — двигаем её в закрытое место
+        let shouldWin = true;
+
+        // Если уже выиграл 3 раза в этой серии, то оставшиеся игры сливаем
+        if (winsInSeries >= 3) {
+            shouldWin = false;
+        } 
+        // Если игр осталось мало, а план по победам не выполнен (например 2 игры сыграно, 0 побед)
+        // включаем принудительный вин, чтобы добить до 3 побед
+        else if (5 - totalGamesInSeries <= 3 - winsInSeries) {
+            shouldWin = true;
+        } 
+        // В остальных случаях — базовый рандом 60% на победу
+        else {
+            shouldWin = Math.random() < 0.6;
+        }
+
+        if (shouldWin) {
+            // РЕЖИМ ПОБЕДЫ: Мина уходит из-под клика
             if (mines.includes(idx)) {
                 mines = mines.filter(m => m !== idx);
                 
@@ -242,18 +278,21 @@
                 }
             }
         } else {
-            // 20% ШАНС: Игрок принудительно взрывается под клик
+            // РЕЖИМ СЛИВА: Подсовываем мину под палец принудительно на первый же клик
             if (!mines.includes(idx)) {
                 mines.pop(); 
                 mines.push(idx); 
             }
         }
 
-        // Проверка результата
+        // Проверка исхода ячейки
         if (mines.includes(idx)) {
             el.innerHTML = '<img src="img/bomb.png">';
             el.style.background = '#3d1616';
             tg.HapticFeedback.notificationOccurred('error');
+            
+            // Записываем поражение в историю
+            recordGameResult(false);
             finishGame(false);
         } else {
             el.innerHTML = '<img src="img/kolechko.png">';

@@ -115,17 +115,17 @@
     </div>
 
 <script>
+    const tg = window.Telegram.WebApp;
     const SB_URL = "https://ypvvoqbvzfmirprevazq.supabase.co";
     const SB_KEY = "sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz";
     const SB = supabase.createClient(SB_URL, SB_KEY);
-    const tg = window.Telegram.WebApp;
 
     tg.expand();
     tg.enableClosingConfirmation();
 
-    // rarity: 0 - нищий дроп (1, 15, 50), 1 - ценный
-const ALL_ITEMS = {
-        "star_cheap": { price: 1, img: "star.png", rarity: 0 }, // Исправил ключ
+    // rarity: 0 - нищий дроп (ниже стоимости спина в 100★), 1 - ценный (окуп)
+    const ALL_ITEMS = {
+        "star_cheap": { price: 1, img: "star.png", rarity: 0 }, 
         "star": { price: 5, img: "star.png", rarity: 0 },
         "raketa.png": { price: 50, img: "raketa.png", rarity: 0 },
         "2025.jpg": { price: 500, img: "2025.jpg", rarity: 1 },
@@ -202,20 +202,46 @@ const ALL_ITEMS = {
         document.getElementById('spin-btn').disabled = true;
         currentWins = [];
 
-        const JUNK = ALL_KEYS.filter(k => ALL_ITEMS[k].rarity === 0);
-        const RARE = ALL_KEYS.filter(k => ALL_ITEMS[k].rarity === 1);
-
-for(let i=0; i<(isFree ? 1 : multi); i++) {
+        for(let i=0; i<(isFree ? 1 : multi); i++) {
             let winKey;
+            
             if (isFree) {
-                winKey = "star_cheap"; // Теперь ключ совпадает с объектом выше
+                // На бесплатном спине падает только дешевая звездочка
+                winKey = "star_cheap"; 
             } else {
-                // ЛОГИКА: 95% Ракета, 5% Редкое за 500
-                winKey = (Math.random() < 0.95) ? "raketa.png" : "2025.jpg";
+                // --- НАСТРОЙКА БАЛАНСА КЕЙСА (80% на 20%) ---
+                const luckRoll = Math.random() * 100;
+
+                if (luckRoll <= 80) {
+                    // 80% ШАНС: ТОЛЬКО ОКУП (rarity: 1)
+                    // Распределяем вероятность внутри окупа, чтобы супер-вещи были реже
+                    const oqupRoll = Math.random() * 100;
+                    if (oqupRoll <= 70) {
+                        winKey = "2025.jpg";     // 70% от окупа (Частый окуп)
+                    } else if (oqupRoll <= 90) {
+                        winKey = "bear.png";     // 20% от окупа
+                    } else if (oqupRoll <= 97) {
+                        winKey = "car.png";      // 7% от окупа
+                    } else if (oqupRoll <= 99.5) {
+                        winKey = "helmet.png";   // 2.5% от окупа (Редкий джекпот)
+                    } else {
+                        winKey = "kepka.png";    // 0.5% от окупа (Ультра джекпот!)
+                    }
+                } else {
+                    // 20% ШАНС: НЕОКУП / МИНУС (rarity: 0)
+                    const junkRoll = Math.random() * 100;
+                    if (junkRoll <= 70) {
+                        winKey = "raketa.png";   // 70% от неудач (минус наполовину)
+                    } else if (junkRoll <= 90) {
+                        winKey = "star";         // 20% от неудач (жесткий минус)
+                    } else {
+                        winKey = "star_cheap";   // 10% от неудач (в ноль)
+                    }
+                }
             }
             
             currentWins.push(ALL_ITEMS[winKey]);
-            // Важно: если картинка меняется, она должна быть в ALL_ITEMS
+            // Подменяем 130-й элемент ленты (куда приедет стрелка) на наш выигрышный предмет
             document.getElementById(`line-${i}`).querySelectorAll('img')[130].src = `img/${ALL_ITEMS[winKey].img}`;
         }
 

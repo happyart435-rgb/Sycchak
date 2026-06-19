@@ -102,7 +102,10 @@
     let balance = 0;
     let gamesPlayed = 0; 
     let isBallActive = false; // Флаг блокировки кнопки
-    const multiValues = [0.3, 0.2, 0.4, 0.5, 0.2, 0.3, 0.1, 0.2, 0.3];
+    
+    // Новые сочные коэффициенты (Края — мега-окуп, ближе к центру — окуп/минус)
+    // Индексы корзин: 0    1    2    3    4    5    6    7    8
+    const multiValues = [10.0, 5.0, 2.0, 1.5, 0.4, 1.5, 2.0, 5.0, 10.0];
 
     const { Engine, Render, Runner, Bodies, Composite, Events, Body } = Matter;
     const engine = Engine.create();
@@ -157,28 +160,37 @@
     }
 
     function dropBall() {
-        if (isBallActive) return; // Блокировка
+        if (isBallActive) return; 
         
         const bet = parseInt(document.getElementById('bet-input').value);
         if (balance < bet) return tg.showAlert("Недостаточно звезд!");
 
         isBallActive = true;
-        dropBtn.disabled = true; // Отключаем кнопку
+        dropBtn.disabled = true; 
 
         balance -= bet;
         document.getElementById('balance').innerText = Math.floor(balance);
 
         gamesPlayed++;
         
+        // --- УМНЫЙ РАСЧЕТ КОРЗИНЫ (80% на 20%) ---
+        const luckRoll = Math.random() * 100;
+        let forceX = 0;
         let spawnX = 200;
-        if (gamesPlayed % 7 !== 0) {
-            spawnX = 185 + (Math.random() * 15);
+
+        if (luckRoll <= 80) {
+            // 80% ШАНС: Направляем шарик на края (корзины 0, 1, 2 или 6, 7, 8), где коэф >= 1.5x
+            const side = Math.random() > 0.5 ? 1 : -1; 
+            spawnX = 200 + (side * (15 + Math.random() * 10)); // Смещаем спавн от центра
+            forceX = side * (0.0015 + Math.random() * 0.001); // Даем микро-толчок в бок
         } else {
-            spawnX = 215 + (Math.random() * 10);
+            // 20% ШАНС: Игрок падает строго в центр (корзина 4 с коэф 0.4x)
+            spawnX = 198 + (Math.random() * 4); // Спавним четко по центру
+            forceX = (Math.random() - 0.5) * 0.0002; // Практически без бокового смещения
         }
 
         const ball = Bodies.circle(spawnX, 10, 8, {
-            restitution: 0.5,
+            restitution: 0.6, // Чуть повысили прыгучесть для красивых отскоков
             friction: 0.02,
             frictionAir: 0.04,
             render: { fillStyle: '#d4af37', strokeStyle: '#fff', lineWidth: 2 },
@@ -187,6 +199,10 @@
         });
 
         Composite.add(engine.world, ball);
+
+        // Применяем скрытый импульс для подкрутки траектории
+        Body.applyForce(ball, ball.position, { x: forceX, y: 0 });
+
         tg.HapticFeedback.impactOccurred('medium');
     }
 
@@ -197,8 +213,6 @@
                 const idx = parseInt(bodyA.label.split('-')[1]);
                 const multiplier = multiValues[idx];
                 
-                if (multiplier >= 5) gamesPlayed = 0;
-
                 const win = Math.floor(bodyB.betAmount * multiplier);
                 Composite.remove(engine.world, bodyB);
                 
@@ -208,7 +222,7 @@
                 await supabaseClient.from('users').update({ stars: balance }).eq('user_id', userId);
                 tg.HapticFeedback.notificationOccurred(win >= bodyB.betAmount ? 'success' : 'warning');
                 
-                // Разблокировка после падения
+                // Разблокировка интерфейса
                 isBallActive = false;
                 dropBtn.disabled = false;
             }

@@ -188,7 +188,6 @@
             isPlaying = true; opened = 0;
             const userSelectedCount = parseInt(document.getElementById('mines-count').value);
             
-            // Генерируем начальное размещение мин строго по выбору юзера
             mines = [];
             while(mines.length < userSelectedCount) {
                 let r = Math.floor(Math.random() * 25);
@@ -217,22 +216,18 @@
         return (0.97 / p);
     }
 
-function openCell(idx, el) {
+    function openCell(idx, el) {
         if (!isPlaying || el.classList.contains('open')) return;
         el.classList.add('open');
 
         const userSelectedCount = parseInt(document.getElementById('mines-count').value);
-
-        // МАКСИМАЛЬНАЯ ПОД КРУТКА: 98% ШАНС НА УСПЕХ, ТЕПЕРЬ ИГРОК ПОЧТИ НЕ ВЗРЫВАЕТСЯ
         const luckRoll = Math.random() * 100; 
 
         if (luckRoll <= 80) {
-            // 98% ШАНС: Игрок ДОЛЖЕН угадать. 
-            // Если в этой ячейке стояла мина, мы её убираем и переносим в другое закрытое место
+            // 80% ШАНС: Игрок угадывает. Если тут была мина — двигаем её в закрытое место
             if (mines.includes(idx)) {
-                mines = mines.filter(m => m !== idx); // Удаляем мину с текущей позиции
+                mines = mines.filter(m => m !== idx);
                 
-                // Находим все индексы, которые еще НЕ открыты игроком и где НЕТ мин
                 let safeCells = [];
                 const allCells = document.querySelectorAll('.cell');
                 for (let i = 0; i < 25; i++) {
@@ -241,38 +236,20 @@ function openCell(idx, el) {
                     }
                 }
                 
-                // Переносим мину на свободное место
                 if (safeCells.length > 0) {
                     let newMinePos = safeCells[Math.floor(Math.random() * safeCells.length)];
                     mines.push(newMinePos);
                 }
             }
         } else {
-            // ВСЕГО 2% ШАНС: Игрок принудительно взрывается
+            // 20% ШАНС: Игрок принудительно взрывается под клик
             if (!mines.includes(idx)) {
-                mines.pop(); // убираем одну случайную мину из массива
-                mines.push(idx); // подсовываем её прямо под текущий клик
+                mines.pop(); 
+                mines.push(idx); 
             }
         }
 
-        // Финальная проверка: взорвался или угадал
-        if (mines.includes(idx)) {
-            el.innerHTML = '<img src="img/bomb.png">';
-            el.style.background = '#3d1616';
-            tg.HapticFeedback.notificationOccurred('error');
-            finishGame(false);
-        } else {
-            el.innerHTML = '<img src="img/kolechko.png">';
-            opened++;
-            const mult = calcMult(opened, userSelectedCount);
-            const winText = (betVal * mult).toFixed(cur === 'stars' ? 0 : 2);
-            document.getElementById('cur-mult').innerText = mult.toFixed(2) + 'x';
-            document.getElementById('btn-main').innerText = `ЗАБРАТЬ ${winText}`;
-            tg.HapticFeedback.impactOccurred('light');
-        }
-    }
-
-        // Проверяем результат после корректировки шансов
+        // Проверка результата
         if (mines.includes(idx)) {
             el.innerHTML = '<img src="img/bomb.png">';
             el.style.background = '#3d1616';
@@ -292,8 +269,6 @@ function openCell(idx, el) {
     function finishGame(win) {
         isPlaying = false;
         const userSelectedCount = parseInt(document.getElementById('mines-count').value);
-        
-        // Показываем ровно столько мин, сколько выбрал юзер
         let minesToShow = mines.slice(0, userSelectedCount);
 
         if (!win) {

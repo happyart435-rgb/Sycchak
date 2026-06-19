@@ -93,7 +93,7 @@
     </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
+const tg = window.Telegram.WebApp;
     const SB_URL = 'https://ypvvoqbvzfmirprevazq.supabase.co';
     const SB_KEY = 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz';
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
@@ -103,12 +103,16 @@
     let gamesPlayed = 0; 
     let isBallActive = false; // Флаг блокировки кнопки
     
-    // Новые сочные коэффициенты (Края — мега-окуп, ближе к центру — окуп/минус)
-    // Индексы корзин: 0    1    2    3    4    5    6    7    8
-    const multiValues = [10.0, 5.0, 2.0, 1.5, 1.0, 1.5, 2.0, 5.0, 5.0];
+    // ИСПРАВЛЕНО: Реальные коэффициенты (Края — окуп, Центр — жесткий минус)
+    // Индексы:          0     1    2    3    4    5    6    7    8
+    const multiValues = [10.0, 5.0, 1.5, 1.0, 0.4, 1.0, 1.5, 5.0, 10.0];
 
     const { Engine, Render, Runner, Bodies, Composite, Events, Body } = Matter;
     const engine = Engine.create();
+    
+    // Отключаем гравитацию по дефолту или настраиваем стандартную
+    engine.gravity.y = 1; 
+
     const container = document.getElementById('plinko-container');
     const dropBtn = document.getElementById('drop-btn');
 
@@ -130,6 +134,7 @@
         Bodies.rectangle(400, 250, 20, 500, wallOpts)
     ]);
 
+    // Генерация препятствий (пегов)
     for (let i = 2; i <= 9; i++) {
         for (let j = 0; j < i; j++) {
             const x = 200 + (j - (i - 1) / 2) * 41;
@@ -141,6 +146,7 @@
         }
     }
 
+    // Создание триггеров корзин внизу
     for (let i = 0; i < 9; i++) {
         const x = 32 + i * 42;
         Composite.add(engine.world, Bodies.rectangle(x, 490, 38, 40, { 
@@ -173,38 +179,55 @@
 
         gamesPlayed++;
         
-        // --- УМНЫЙ РАСЧЕТ КОРЗИНЫ (80% на 20%) ---
+        // --- ГАРАНТИРОВАННЫЙ РАСЧЕТ ШАНСОВ ---
         const luckRoll = Math.random() * 100;
-        let forceX = 0;
-        let spawnX = 200;
+        let targetBucket = 4; // Дефолтная центральная корзина (0.4x)
 
         if (luckRoll <= 80) {
-            // 80% ШАНС: Направляем шарик на края (корзины 0, 1, 2 или 6, 7, 8), где коэф >= 1.5x
-            const side = Math.random() > 0.5 ? 1 : -1; 
-            spawnX = 200 + (side * (15 + Math.random() * 10)); // Смещаем спавн от центра
-            forceX = side * (0.0015 + Math.random() * 0.001); // Даем микро-толчок в бок
+            // 80% ШАНС НА СЛИВ: Дропаем в корзины с низким множителем (3, 4, 5) -> [1.0x, 0.4x, 1.0x]
+            const badBuckets = [3, 4, 5];
+            targetBucket = badBuckets[Math.floor(Math.random() * badBuckets.length)];
         } else {
-            // 20% ШАНС: Игрок падает строго в центр (корзина 4 с коэф 0.4x)
-            spawnX = 198 + (Math.random() * 4); // Спавним четко по центру
-            forceX = (Math.random() - 0.5) * 0.0002; // Практически без бокового смещения
+            // 20% ШАНС НА ВЫИГРЫШ: Отправляем на сочные края (0, 1, 2 или 6, 7, 8)
+            const goodBuckets = [0, 1, 2, 6, 7, 8];
+            targetBucket = goodBuckets[Math.floor(Math.random() * goodBuckets.length)];
         }
 
-        const ball = Bodies.circle(spawnX, 10, 8, {
-            restitution: 0.6, // Чуть повысили прыгучесть для красивых отскоков
+        // Вычисляем целевую X координату центра выбранной корзины
+        const targetX = 32 + targetBucket * 42;
+
+        const ball = Bodies.circle(200, 10, 8, {
+            restitution: 0.5,
             friction: 0.02,
-            frictionAir: 0.04,
+            frictionAir: 0.03,
             render: { fillStyle: '#d4af37', strokeStyle: '#fff', lineWidth: 2 },
             label: 'ball',
-            betAmount: bet
+            betAmount: bet,
+            targetX: targetX // Сохраняем цель прямо в объект шара
         });
 
         Composite.add(engine.world, ball);
-
-        // Применяем скрытый импульс для подкрутки траектории
-        Body.applyForce(ball, ball.position, { x: forceX, y: 0 });
-
         tg.HapticFeedback.impactOccurred('medium');
     }
+
+    // Умная корректировка полета в реальном времени
+    Events.on(engine, 'beforeUpdate', () => {
+        const bodies = Composite.allBodies(engine.world);
+        bodies.forEach(body => {
+            if (body.label === 'ball' && body.targetX !== undefined) {
+                // Плавное притяжение шара к нужной вертикали по мере падения (чем ниже, тем точнее привязка)
+                const distanceX = body.targetX - body.position.x;
+                
+                // Рассчитываем силу магнетизма в зависимости от высоты (Y от 10 до 490)
+                const pullFactor = body.position.y > 150 ? 0.0008 : 0.0002; 
+                
+                Body.setVelocity(body, {
+                    x: body.velocity.x + (distanceX * pullFactor),
+                    y: body.velocity.y
+                });
+            }
+        });
+    });
 
     Events.on(engine, 'collisionStart', (event) => {
         event.pairs.forEach(async (pair) => {

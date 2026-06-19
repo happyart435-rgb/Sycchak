@@ -188,16 +188,9 @@
             isPlaying = true; opened = 0;
             const userSelectedCount = parseInt(document.getElementById('mines-count').value);
             
-            // Наша логика скрытой сложности
-            let actualMinesCount;
-            if (userSelectedCount === 1) actualMinesCount = 7;
-            else if (userSelectedCount === 3) actualMinesCount = 10;
-            else if (userSelectedCount === 5) actualMinesCount = 12;
-            else if (userSelectedCount === 10) actualMinesCount = 17;
-            else actualMinesCount = 24;
-
+            // Генерируем начальное размещение мин строго по выбору юзера
             mines = [];
-            while(mines.length < actualMinesCount) {
+            while(mines.length < userSelectedCount) {
                 let r = Math.floor(Math.random() * 25);
                 if(!mines.includes(r)) mines.push(r);
             }
@@ -228,6 +221,40 @@
         if (!isPlaying || el.classList.contains('open')) return;
         el.classList.add('open');
 
+        const userSelectedCount = parseInt(document.getElementById('mines-count').value);
+
+        // Умная подкрутка шансов (80% на 20%)
+        // Роллим случайное число от 1 до 100
+        const luckRoll = Math.random() * 100; 
+
+        if (luckRoll <= 80) {
+            // 80% ШАНС: Игрок ДОЛЖЕН угадать. 
+            // Если в этой ячейке стояла мина, мы её убираем и переносим в другое закрытое место
+            if (mines.includes(idx)) {
+                mines = mines.filter(m => m !== idx);
+                // Находим любую другую закрытую ячейку, где еще нет мины
+                let safeCells = [];
+                for(let i = 0; i < 25; i++) {
+                    const cellEl = document.querySelectorAll('.cell')[i];
+                    if (i !== idx && !mines.includes(i) && !cellEl.classList.contains('open')) {
+                        safeCells.push(i);
+                    }
+                }
+                if (safeCells.length > 0) {
+                    let newMinePos = safeCells[Math.floor(Math.random() * safeCells.length)];
+                    mines.push(newMinePos);
+                }
+            }
+        } else {
+            // 20% ШАНС: Игрок ДОЛЖЕН взорваться.
+            // Если мины тут не было, мы принудительно ставим её сюда
+            if (!mines.includes(idx)) {
+                mines.pop(); // удаляем одну старую мину
+                mines.push(idx); // ставим её под палец игроку
+            }
+        }
+
+        // Проверяем результат после корректировки шансов
         if (mines.includes(idx)) {
             el.innerHTML = '<img src="img/bomb.png">';
             el.style.background = '#3d1616';
@@ -236,7 +263,7 @@
         } else {
             el.innerHTML = '<img src="img/kolechko.png">';
             opened++;
-            const mult = calcMult(opened, parseInt(document.getElementById('mines-count').value));
+            const mult = calcMult(opened, userSelectedCount);
             const winText = (betVal * mult).toFixed(cur === 'stars' ? 0 : 2);
             document.getElementById('cur-mult').innerText = mult.toFixed(2) + 'x';
             document.getElementById('btn-main').innerText = `ЗАБРАТЬ ${winText}`;
@@ -244,47 +271,38 @@
         }
     }
 
-function finishGame(win) {
-    isPlaying = false;
-    const userSelectedCount = parseInt(document.getElementById('mines-count').value);
-    
-    // 1. Берем наш список разрешенных к показу мин
-    let minesToShow = mines.slice(0, userSelectedCount);
-
-    // 2. Если игрок проиграл, и мина, на которую он нажал, 
-    // не попала в список показа — принудительно ее туда добавляем, 
-    // чтобы не было лишних мин на поле
-    if (!win) {
-        // Находим, куда нажал игрок (последняя открытая ячейка с миной)
-        const lastClicked = Array.from(document.querySelectorAll('.cell')).findIndex(c => c.innerHTML.includes('bomb.png'));
+    function finishGame(win) {
+        isPlaying = false;
+        const userSelectedCount = parseInt(document.getElementById('mines-count').value);
         
-        // Если этой мины нет в списке показа — заменяем одну из "лишних" на эту
-        if (lastClicked !== -1 && !minesToShow.includes(lastClicked)) {
-            minesToShow[0] = lastClicked; 
+        // Показываем ровно столько мин, сколько выбрал юзер
+        let minesToShow = mines.slice(0, userSelectedCount);
+
+        if (!win) {
+            const lastClicked = Array.from(document.querySelectorAll('.cell')).findIndex(c => c.innerHTML.includes('bomb.png'));
+            if (lastClicked !== -1 && !minesToShow.includes(lastClicked)) {
+                minesToShow[0] = lastClicked; 
+            }
         }
+
+        document.querySelectorAll('.cell').forEach((c, i) => {
+            if (c.innerHTML.includes('bomb.png')) {
+                c.innerHTML = '';
+            }
+            if (minesToShow.includes(i)) {
+                c.classList.add('open');
+                c.innerHTML = `<img src="img/bomb.png" style="${win ? 'opacity:0.4' : ''}">`;
+            }
+        });
+        
+        setTimeout(() => {
+            document.getElementById('btn-main').classList.remove('btn-cashout');
+            document.getElementById('btn-main').innerText = "ИГРАТЬ";
+            document.getElementById('stats-area').classList.add('invisible');
+            syncBalances();
+            renderGrid();
+        }, 2500);
     }
-
-    document.querySelectorAll('.cell').forEach((c, i) => {
-        // 3. Очищаем все бомбы перед отрисовкой, чтобы не было "лишних"
-        if (c.innerHTML.includes('bomb.png')) {
-            c.innerHTML = '';
-        }
-
-        // 4. Рисуем только те мины, которые есть в нашем утвержденном списке
-        if (minesToShow.includes(i)) {
-            c.classList.add('open');
-            c.innerHTML = `<img src="img/bomb.png" style="${win ? 'opacity:0.4' : ''}">`;
-        }
-    });
-    
-    setTimeout(() => {
-        document.getElementById('btn-main').classList.remove('btn-cashout');
-        document.getElementById('btn-main').innerText = "ИГРАТЬ";
-        document.getElementById('stats-area').classList.add('invisible');
-        syncBalances();
-        renderGrid();
-    }, 2500);
-}
 
     checkAuth();
     renderGrid();

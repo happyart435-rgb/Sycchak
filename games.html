@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>NowearSpin Hub</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
@@ -123,23 +124,45 @@
             <div class="image-container">
                 <img src="plinko.png" class="game-img">
             </div>
-            <button onclick="launch('spin.html')" class="btn-play">Играть</button>
+            <button onclick="launch('plinko.html')" class="btn-play">Играть</button>
+        </section>
+
+        <section class="game-card">
+            <div class="image-container">
+                <img src="plinko.png" class="game-img">
+            </div>
+            <button onclick="launch('Lovlyagift.html')" class="btn-play">Играть</button>
         </section>
 
     </div>
 
-    <script>
-        let tg = window.Telegram.WebApp;
-        
-        function launch(file) {
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('heavy');
+<script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        const SB = supabase.createClient("https://ypvvoqbvzfmirprevazq.supabase.co", "sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz");
+        const userId = tg.initDataUnsafe?.user?.id;
+
+        async function launchWithPayment(file) {
+            if (!userId) { alert("Ошибка авторизации"); return; }
+            try {
+                const { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
+                if ((data?.stars || 0) < 100) {
+                    alert("Недостаточно звезд! Нужно 100.");
+                    return;
+                }
+                if (confirm("Вход в игру стоит 100 звезд. Продолжить?")) {
+                    await SB.from('users').update({ stars: data.stars - 100 }).eq('user_id', userId);
+                    window.location.replace("./" + file);
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка сервера");
             }
-            console.log("Запуск:", file);
-            window.location.replace("./" + file);
         }
 
-        tg.expand();
+        function launchDirect(file) {
+            window.location.replace("./" + file);
+        }
     </script>
 </body>
 </html>

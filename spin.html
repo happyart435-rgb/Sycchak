@@ -2,95 +2,134 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Nowear Casino</title>
+    <title>Nowear Slots Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        .slot-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; border: 4px solid #d4af37; padding: 5px; width: 350px; height: 300px; overflow: hidden; background: #222; }
+        body { background: radial-gradient(circle, #4a3810, #000); color: #ffd700; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
+        .header { background: rgba(0,0,0,0.8); padding: 15px; border: 2px solid #d4af37; border-radius: 10px; margin: 10px; width: 90%; text-align: center; }
+        .slot-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; border: 6px solid #d4af37; padding: 5px; width: 350px; height: 300px; overflow: hidden; background: #222; border-radius: 15px; }
         .reel { display: flex; flex-direction: column; transition: transform 1.5s cubic-bezier(0.1, 0, 0, 1); }
-        .cell { height: 75px; display: flex; align-items: center; justify-content: center; }
+        .cell { height: 75px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #444; }
         .cell img { width: 50px; height: 50px; object-fit: contain; }
+        .controls { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; width: 350px; }
+        button { padding: 15px; background: #d4af37; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; color: black; }
+        .bonus-btn { background: #ff4500; color: white; }
     </style>
 </head>
 <body>
 
-<div id="bal">Баланс: загрузка...</div>
+<div class="header">
+    <div id="bal">Баланс: -- ⭐</div>
+    <div id="win-display" style="font-size: 1.2em; color: #00ff00;">Выигрыш: 0 ⭐</div>
+</div>
+
 <div class="slot-container" id="grid">
     <div class="reel" id="r0"></div><div class="reel" id="r1"></div><div class="reel" id="r2"></div><div class="reel" id="r3"></div><div class="reel" id="r4"></div>
 </div>
-<button id="spin-btn" onclick="spin()" style="margin-top: 10px;">КРУТИТЬ (25 ⭐)</button>
+
+<div class="controls">
+    <label>Ставка: <input type="number" id="bet-input" value="25" style="width: 60px;"></label>
+    <button id="spin-btn" onclick="spin()">КРУТИТЬ</button>
+    <button class="bonus-btn" onclick="alert('Бонусный раунд куплен!')">КУПИТЬ БОНУСКУ (x100)</button>
+</div>
 
 <script>
 const SB = supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz');
 const userId = '8015661230';
-
-// Твой список (ключи - это имена файлов)
 const ITEMS = {
-    "star.png": { chance: 100 }, "paska.jpg": { chance: 90 }, "otkritka.jpg": { chance: 85 },
-    "koks.jpg": { chance: 80 }, "botinok.png": { chance: 70 }, "kalendar.png": { chance: 70 },
-    "1may.jpg": { chance: 60 }, "bear.png": { chance: 50 }, "koktel.png": { chance: 50 },
-    "dog.png": { chance: 50 }, "shapka.png": { chance: 50 }, "zmei.png": { chance: 50 },
-    "lucky.jpg": { chance: 50 }, "box.png": { chance: 45 }, "krovatka.jpg": { chance: 45 },
-    "yayko.png": { chance: 45 }, "meczcc.png": { chance: 45 }, "kryg.PNG": { chance: 45 },
-    "gribb.PNG": { chance: 45 }, "booox.png": { chance: 40 }, "mafin.jpg": { chance: 40 },
-    "metch.png": { chance: 40 }, "zhele.png": { chance: 40 }, "zirka.PNG": { chance: 35 },
-    "cvetk.PNG": { chance: 30 }, "book.jpg": { chance: 25 }, "cvetok.png": { chance: 25 },
-    "shar.jpg": { chance: 25 }, "tyfli.PNG": { chance: 20 }, "rozza.png": { chance: 15 },
-    "heart.png": { chance: 15 }, "sshapka.PNG": { chance: 12 }, "colso.png": { chance: 10 },
-    "soska.jpg": { chance: 8 }, "ciga.png": { chance: 8 }, "ccolso2.png": { chance: 8 },
-    "shlem.png": { chance: 6 }, "orel.jpg": { chance: 4 }, "car.png": { chance: 4 },
-    "chemodan.jpg": { chance: 4 }, "grob.jpg": { chance: 4 }, "gyba.png": { chance: 4 },
-    "kirpitch.jpg": { chance: 2 }, "dyxi.png": { chance: 2 }, "kot.png": { chance: 2 },
-    "obyv.jpg": { chance: 2 }, "statyya.jpg": { chance: 1 }, "kepka.png": { chance: 0.5 },
-    "costum.jpg": { chance: 0.5 }, "helmet.png": { chance: 0.5 }
+    "star.png": { name: "Pure Star", chance: 100 },
+    "paska.jpg": { name: "Easter Cake", chance: 90 },
+    "otkritka.jpg": { name: "Peace Dove", chance: 85 },
+    "koks.jpg": { name: "Party Cocktail", chance: 80 },
+    "botinok.png": { name: "Old Boot", chance: 70 },
+    "kalendar.png": { name: "Event Calendar", chance: 70 },
+    "1may.jpg": { name: "1 May Exclusive", chance: 60 },
+    "bear.png": { name: "Honey Bear", chance: 50 },
+    "koktel.png": { name: "Toxic Mix", chance: 50 },
+    "dog.png": { name: "Rich Dog", chance: 50 },
+    "shapka.png": { name: "Santa Hat", chance: 50 },
+    "zmei.png": { name: "Snake Friend", chance: 50 },
+    "lucky.jpg": { name: "Clover Lucky", chance: 50 },
+    "box.png": { name: "Jack in Box", chance: 45 },
+    "krovatka.jpg": { name: "Baby Bow", chance: 45 },
+    "yayko.png": { name: "Dragon Egg", chance: 45 },
+    "meczcc.png": { name: "Faith Amulet", chance: 45 },
+    "kryg.PNG": { name: "Snow Globe", chance: 45 },
+    "gribb.PNG": { name: "Spy Agaric", chance: 45 },
+    "booox.png": { name: "Berry Box", chance: 40 },
+    "mafin.jpg": { name: "Sugar Muffin", chance: 40 },
+    "metch.png": { name: "Star Saber", chance: 40 },
+    "zhele.png": { name: "Slime Jelly", chance: 40 },
+    "zirka.PNG": { name: "Hanging Star", chance: 35 },
+    "cvetk.PNG": { name: "Sakura Flower", chance: 30 },
+    "book.jpg": { name: "Ancient Book", chance: 25 },
+    "cvetok.png": { name: "Wild Flower", chance: 25 },
+    "shar.jpg": { name: "Magic Ball", chance: 25 },
+    "tyfli.PNG": { name: "Sky Stilettos", chance: 20 },
+    "rozza.png": { name: "Velvet Rose", chance: 15 },
+    "heart.png": { name: "Heart Lock", chance: 15 },
+    "sshapka.PNG": { name: "Khabib's Papakha", chance: 12 },
+    "colso.png": { name: "Blue Diamond", chance: 10 },
+    "soska.jpg": { name: "Diamond Pacifier", chance: 8 },
+    "ciga.png": { name: "Luxury Cigar", chance: 8 },
+    "ccolso2.png": { name: "Star Ring", chance: 8 },
+    "shlem.png": { name: "Biker Helmet", chance: 6 },
+    "orel.jpg": { name: "Golden Eagle", chance: 4 },
+    "car.png": { name: "Sports Car", chance: 4 },
+    "chemodan.jpg": { name: "Traveler Case", chance: 4 },
+    "grob.jpg": { name: "Ancient Coffin", chance: 4 },
+    "gyba.png": { name: "Lava Lips", chance: 4 },
+    "kirpitch.jpg": { name: "Golden Brick", chance: 2 },
+    "dyxi.png": { name: "Gold Perfume", chance: 2 },
+    "kot.png": { name: "Atomic Cat", chance: 2 },
+    "obyv.jpg": { name: "Sneakers Pro", chance: 2 },
+    "statyya.jpg": { name: "Hero Statue", chance: 1 },
+    "kepka.png": { name: "Legendary Cap", chance: 0.5 },
+    "costum.jpg": { name: "Royal Costume", chance: 0.5 },
+    "helmet.png": { name: "Spartan Helmet", chance: 0.5 }
 };
 
-const itemKeys = Object.keys(ITEMS);
-let stars = 0;
+async function spin() {
+    const bet = parseInt(document.getElementById('bet-input').value);
+    document.getElementById('spin-btn').disabled = true;
 
-async function init() {
-    let { data } = await SB.from('users').select('stars').eq('user_id', userId).maybeSingle();
-    stars = data?.stars || 0;
-    document.getElementById('bal').innerText = `Баланс: ${stars} ⭐`;
-    render();
-}
-
-function render() {
-    for(let i=0; i<5; i++) {
+    // Генерируем новые картинки для барабанов
+    document.querySelectorAll('.reel').forEach(reel => {
         let html = '';
         for(let j=0; j<10; j++) {
-            // Берем случайный ключ из объекта
-            let key = itemKeys[Math.floor(Math.random() * itemKeys.length)];
-            html += `<div class="cell"><img src="img/${key}"></div>`;
+            html += `<div class="cell"><img src="img/${ITEMS[Math.floor(Math.random()*ITEMS.length)]}"></div>`;
         }
-        document.getElementById('r'+i).innerHTML = html;
-    }
-}
-
-async function spin() {
-    if (stars < 25) return alert("Мало звезд!");
-    document.getElementById('spin-btn').disabled = true;
-    
-    // Анимация
-    document.querySelectorAll('.reel').forEach(r => r.style.transform = `translateY(-400px)`);
+        reel.innerHTML = html;
+        reel.style.transition = 'transform 1.5s cubic-bezier(0.1, 0, 0, 1)';
+        reel.style.transform = `translateY(-400px)`;
+    });
 
     setTimeout(async () => {
-        stars -= 25;
-        await SB.from('users').update({ stars }).eq('user_id', userId);
+        // Логика выигрыша (пример)
+        let win = Math.random() > 0.7 ? bet * 3 : 0;
+        document.getElementById('win-display').innerText = `Выигрыш: ${win} ⭐`;
         
-        document.getElementById('bal').innerText = `Баланс: ${stars} ⭐`;
+        // Обновление баланса
+        let { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
+        let newStars = data.stars - bet + win;
+        await SB.from('users').update({ stars: newStars }).eq('user_id', userId);
+        document.getElementById('bal').innerText = `Баланс: ${newStars} ⭐`;
+
         // Сброс анимации
         document.querySelectorAll('.reel').forEach(r => {
             r.style.transition = 'none';
             r.style.transform = `translateY(0)`;
-            setTimeout(() => r.style.transition = 'transform 1.5s cubic-bezier(0.1, 0, 0, 1)', 50);
         });
         document.getElementById('spin-btn').disabled = false;
-    }, 1500);
+    }, 1600);
 }
 
-init();
+// Инициализация
+(async () => {
+    let { data } = await SB.from('users').select('stars').eq('user_id', userId).maybeSingle();
+    document.getElementById('bal').innerText = `Баланс: ${data?.stars || 0} ⭐`;
+})();
 </script>
 </body>
 </html>

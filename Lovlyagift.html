@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StarDrop - Catch Master</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #ffe600; /* Сочный желтый вместо зеленого */
@@ -140,6 +141,11 @@
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
+    const SB_URL = "https://ypvvoqbvzfmirprevazq.supabase.co";
+    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzM3NTgsImV4cCI6MjA5NzQ0OTc1OH0.bt4iVMEX0JtYzJxW7gtRxWEOz0eXPIOautw7_FALhkc";
+    const SB = supabase.createClient(SB_URL, SB_KEY);
+
+const userId = tg.initDataUnsafe?.user?.id;
     const screen = document.getElementById('game-screen');
     const giftLabel = document.getElementById('gift-count');
     const starLabel = document.getElementById('star-count');
@@ -173,10 +179,21 @@
         return window.location.origin + '/' + fileName;
     }
 
-    function initStars() {
-        const savedStars = localStorage.getItem('user_stars') || "0";
-        starLabel.innerText = savedStars;
+async function initStars() {
+    if (!userId) return;
+
+    try {
+        const { data } = await SB
+            .from('users')
+            .select('stars')
+            .eq('user_id', userId)
+            .single();
+
+        starLabel.innerText = Math.floor(data?.stars || 0);
+    } catch (e) {
+        console.error(e);
     }
+}
 
     function spawnItem() {
         if (!gameActive || isPaused) return;
@@ -206,30 +223,30 @@
         item.style.top = '-100px';
         screen.appendChild(item);
 
-        const handleHit = (e) => {
-            if (e.cancelable) e.preventDefault();
-            if (!gameActive || isPaused || isCaught) return;
+const handleHit = (e) => {
+    if (e.cancelable) e.preventDefault();
+    if (!gameActive || isPaused || isCaught) return;
 
-            isCaught = true; 
-            const currentType = item.getAttribute('data-type');
-            
-            if (currentType === 'bomb') {
-                endGame('bomb');
-            } else if (currentType === 'star') {
-                starsEarned++;
-                const currentTotal = parseInt(localStorage.getItem('user_stars')) || 0;
-                localStorage.setItem('user_stars', (currentTotal + 1).toString());
-                starLabel.innerText = localStorage.getItem('user_stars');
-                tg.HapticFeedback.notificationOccurred('success');
-                item.remove();
-            } else {
-                giftsCollected++;
-                giftLabel.innerText = giftsCollected;
-                if (giftsCollected % 10 === 0) baseSpeed += 0.3;
-                tg.HapticFeedback.impactOccurred('light');
-                item.remove();
-            }
-        };
+    isCaught = true; 
+    const currentType = item.getAttribute('data-type');
+    
+    if (currentType === 'bomb') {
+        endGame('bomb');
+    } else {
+        if (currentType === 'star') {
+            starsEarned++;
+            // Просто обновляем UI, не дергаем базу!
+            starLabel.innerText = parseInt(starLabel.innerText) + 1;
+            tg.HapticFeedback.notificationOccurred('success');
+        } else {
+            giftsCollected++;
+            giftLabel.innerText = giftsCollected;
+            if (giftsCollected % 10 === 0) baseSpeed += 0.3;
+            tg.HapticFeedback.impactOccurred('light');
+        }
+        item.remove();
+    }
+};
 
         item.onmousedown = item.ontouchstart = handleHit;
 
@@ -288,27 +305,27 @@
         localStorage.setItem('last_gift_time', Date.now().toString());
     }
 
-    async function saveAndExit() {
-        if (isSaving) return;
-        isSaving = true;
-        const exitBtn = document.getElementById('exit-btn');
-        if (exitBtn) exitBtn.innerText = "СОХРАНЕНИЕ...";
+async function saveAndExit() {
+    if (isSaving) return;
+    isSaving = true;
+    
+    const exitBtn = document.getElementById('exit-btn');
+    if (exitBtn) exitBtn.innerText = "СОХРАНЕНИЕ...";
 
-        if (user?.id && starsEarned > 0) {
-            try {
-                await fetch(`${BACKEND_URL}/sync`, { 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: user.id,
-                        name: user.first_name,
-                        coins: parseInt(localStorage.getItem('user_stars')) || 0 
-                    })
-                });
-            } catch (e) { console.error("Server error"); }
+    if (userId && starsEarned > 0) {
+        try {
+            // Получаем текущее кол-во из базы один раз
+            const { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
+            const total = (data?.stars || 0) + starsEarned;
+            
+            // Обновляем базу один раз
+            await SB.from('users').update({ stars: total }).eq('user_id', userId);
+        } catch (e) {
+            console.error("Ошибка сохранения:", e);
         }
-        window.location.href = 'index.html';
     }
+    window.location.href = 'index.html';
+}
 
     function gameLoop() {
         if (gameActive && !isPaused) {

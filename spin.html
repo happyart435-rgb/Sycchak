@@ -7,9 +7,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background: radial-gradient(circle, #4a3810, #000); color: #ffd700; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
-        .header { background: rgba(0,0,0,0.8); padding: 15px; border: 2px solid #d4af37; border-radius: 10px; margin: 10px; width: 90%; text-align: center; }
+        .header { background: rgba(0,0,0,0.8); padding: 15px; border: 2px solid #d4af37; border-radius: 10px; margin: 10px; width: 350px; text-align: center; }
         .slot-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; border: 6px solid #d4af37; padding: 5px; width: 350px; height: 300px; overflow: hidden; background: #222; border-radius: 15px; }
-        .reel { display: flex; flex-direction: column; transition: transform 1.5s cubic-bezier(0.1, 0, 0, 1); }
+        .reel { display: flex; flex-direction: column; }
         .cell { height: 75px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #444; }
         .cell img { width: 50px; height: 50px; object-fit: contain; }
         .controls { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; width: 350px; }
@@ -29,15 +29,17 @@
 </div>
 
 <div class="controls">
-    <label>Ставка: <input type="number" id="bet-input" value="25" style="width: 60px;"></label>
+    <label>Ставка: <input type="number" id="bet-input" value="25" style="width: 60px; color: black;"></label>
     <button id="spin-btn" onclick="spin()">КРУТИТЬ</button>
-    <button class="bonus-btn" onclick="alert('Бонусный раунд куплен!')">КУПИТЬ БОНУСКУ (x100)</button>
+    <button class="bonus-btn" onclick="alert('Бонус куплен! Механика в разработке')">КУПИТЬ БОНУСКУ (x100)</button>
 </div>
 
 <script>
 const SB = supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz');
 const userId = '8015661230';
-const ITEMS = {
+
+// Твой объект ITEMS
+const ITEMS_OBJ = {
     "star.png": { name: "Pure Star", chance: 100 },
     "paska.jpg": { name: "Easter Cake", chance: 90 },
     "otkritka.jpg": { name: "Peace Dove", chance: 85 },
@@ -89,40 +91,46 @@ const ITEMS = {
     "costum.jpg": { name: "Royal Costume", chance: 0.5 },
     "helmet.png": { name: "Spartan Helmet", chance: 0.5 }
 };
+// Превращаем ключи в массив для случайного выбора
+const itemFiles = Object.keys(ITEMS_OBJ);
 
 async function spin() {
     const bet = parseInt(document.getElementById('bet-input').value);
-    document.getElementById('spin-btn').disabled = true;
+    const btn = document.getElementById('spin-btn');
+    btn.disabled = true;
 
-    // Генерируем новые картинки для барабанов
+    // Генерируем новые картинки
     document.querySelectorAll('.reel').forEach(reel => {
         let html = '';
         for(let j=0; j<10; j++) {
-            html += `<div class="cell"><img src="img/${ITEMS[Math.floor(Math.random()*ITEMS.length)]}"></div>`;
+            let randomFile = itemFiles[Math.floor(Math.random() * itemFiles.length)];
+            html += `<div class="cell"><img src="img/${randomFile}"></div>`;
         }
         reel.innerHTML = html;
+        // Анимация
         reel.style.transition = 'transform 1.5s cubic-bezier(0.1, 0, 0, 1)';
-        reel.style.transform = `translateY(-400px)`;
+        reel.style.transform = `translateY(-500px)`;
     });
 
     setTimeout(async () => {
-        // Логика выигрыша (пример)
-        let win = Math.random() > 0.7 ? bet * 3 : 0;
+        // Логика выигрыша
+        let win = Math.random() > 0.7 ? bet * 2 : 0;
         document.getElementById('win-display').innerText = `Выигрыш: ${win} ⭐`;
         
-        // Обновление баланса
+        // Синхронизация БД
         let { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
-        let newStars = data.stars - bet + win;
+        let newStars = (data.stars || 0) - bet + win;
         await SB.from('users').update({ stars: newStars }).eq('user_id', userId);
+        
         document.getElementById('bal').innerText = `Баланс: ${newStars} ⭐`;
 
-        // Сброс анимации
+        // Сброс
         document.querySelectorAll('.reel').forEach(r => {
             r.style.transition = 'none';
             r.style.transform = `translateY(0)`;
         });
-        document.getElementById('spin-btn').disabled = false;
-    }, 1600);
+        btn.disabled = false;
+    }, 1500);
 }
 
 // Инициализация

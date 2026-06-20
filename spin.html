@@ -2,97 +2,89 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NowearSpin - Elite</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NowearSlots</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
-        :root { --accent: #FFD700; }
-        body { background: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%); color: white; font-family: 'Outfit', sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; width: 100%; max-width: 320px; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.1); }
-        .cell { aspect-ratio: 1; background: #1a1a1a; border-radius: 16px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; transition: 0.3s; cursor: pointer; }
-        .cell:active { transform: scale(0.9); }
-        .cell.open { background: #121212; border-color: #444; }
-        
-        .ui-panel { background: rgba(25, 25, 25, 0.8); backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 24px; border-radius: 32px 32px 0 0; }
-        .btn-main { background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%); color: black; font-weight: 900; padding: 20px; border-radius: 18px; width: 100%; box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3); transition: 0.3s; }
-        .btn-cashout { background: linear-gradient(135deg, #00FF88 0%, #008844 100%) !important; color: white; }
+        .slot { width: 80px; height: 80px; background: #1a140a; border: 2px solid #d4af37; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+        .slot img { width: 60px; height: 60px; object-fit: contain; }
     </style>
 </head>
-<body>
+<body class="bg-[#0d0a05] text-white flex flex-col items-center min-h-screen pt-10">
 
-    <header class="p-6 flex justify-between items-center border-b border-[#222]">
-        <div class="font-black text-2xl tracking-tighter italic">Nowear<span class="text-yellow-500">Spin</span></div>
-        <div class="flex gap-4 font-bold text-sm bg-black/50 px-4 py-2 rounded-full border border-white/10">
-            <div>⭐ <span id="val-stars">0</span></div>
-            <div>💎 <span id="val-ton">0.00</span></div>
-        </div>
-    </header>
+    <div class="mb-8 text-center">
+        <h2 class="text-[#d4af37] font-black text-2xl uppercase italic">СЛОТЫ</h2>
+        <p id="balance" class="text-white font-bold">Баланс: 0 ⭐</p>
+    </div>
 
-    <main class="flex-1 flex flex-col items-center justify-center">
-        <div id="stats-area" class="hidden mb-6 px-6 py-2 bg-yellow-500/10 border border-yellow-500/50 rounded-full text-yellow-500 font-bold">МНОЖИТЕЛЬ: <span id="cur-mult">1.00x</span></div>
-        <div id="grid" class="mines-grid"></div>
-    </main>
+    <div class="flex gap-4 mb-8">
+        <div id="s1" class="slot"><img src="img/star.png"></div>
+        <div id="s2" class="slot"><img src="img/star.png"></div>
+        <div id="s3" class="slot"><img src="img/star.png"></div>
+    </div>
 
-    <aside class="ui-panel">
-        <div class="flex gap-3 mb-4">
-            <button onclick="switchCur('stars')" id="mode-stars" class="flex-1 p-3 bg-black rounded-xl border border-yellow-500">STARS</button>
-            <button onclick="switchCur('ton')" id="mode-ton" class="flex-1 p-3 bg-black rounded-xl border border-transparent">TON</button>
-        </div>
-        <button id="btn-main" onclick="onMainAction()" class="btn-main">ИГРАТЬ</button>
-    </aside>
+    <button id="btn-spin" onclick="startSpin()" class="bg-[#d4af37] text-black font-black px-10 py-4 rounded-2xl uppercase hover:scale-105 transition">
+        КРУТИТЬ (50 ⭐)
+    </button>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    const SB = supabase.createClient("https://ypvvoqbvzfmirprevazq.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTg3Mzc1OCwiZXhwIjoyMDk3NDQ5NzU4fQ.dCRBp7VqLBLObh7wzTQIXE5OtzrGJabZaF6qaduHi7s");
-    let cur = 'stars', isPlaying = false, mines = [], opened = 0, history = [];
-    const userId = tg.initDataUnsafe?.user?.id || '8015661230';
+const tg = window.Telegram.WebApp;
+const userId = String(tg.initDataUnsafe?.user?.id || '8015661230');
+const SB = supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz');
 
-    async function sync() {
-        const { data } = await SB.from('users').select('*').eq('user_id', userId).single();
-        if(data) { document.getElementById('val-stars').innerText = Math.floor(data.stars || 0); document.getElementById('val-ton').innerText = Number(data.balance || 0).toFixed(2); }
+const ITEMS = {
+    "star.png": { name: "Pure Star", price: 5 },
+    "bear.png": { name: "Honey Bear", price: 3500 },
+    "car.png": { name: "Sports Car", price: 5000 },
+    "cvetok.png": { name: "Wild Flower", price: 1000 },
+    "kepka.png": { name: "Legendary Cap", price: 100000 }
+};
+const keys = Object.keys(ITEMS);
+
+let user = null;
+
+async function init() {
+    const { data } = await SB.from('users').select('*').eq('user_id', userId).maybeSingle();
+    user = data;
+    document.getElementById('balance').innerText = `Баланс: ${user.stars || 0} ⭐`;
+}
+
+async function startSpin() {
+    if (user.stars < 50) return tg.showAlert("Недостаточно звезд!");
+    
+    // 1. Списание
+    const { error } = await SB.from('users').update({ stars: user.stars - 50 }).eq('user_id', userId);
+    if (error) return;
+
+    // 2. Генерация результатов
+    const r1 = keys[Math.floor(Math.random() * keys.length)];
+    const r2 = keys[Math.floor(Math.random() * keys.length)];
+    const r3 = keys[Math.floor(Math.random() * keys.length)];
+
+    document.getElementById('s1').innerHTML = `<img src="img/${r1}">`;
+    document.getElementById('s2').innerHTML = `<img src="img/${r2}">`;
+    document.getElementById('s3').innerHTML = `<img src="img/${r3}">`;
+
+    // 3. Проверка комбо
+    if (r1 === r2 && r2 === r3) {
+        const rewardName = ITEMS[r1].name;
+        const prize = ITEMS[r1].price; // Или множитель от этого значения
+        
+        const newInv = [...(user.inventory || []), { img: 'img/' + r1, id: Date.now() }];
+        await SB.from('users').update({ 
+            stars: user.stars - 50 + prize,
+            inventory: newInv
+        }).eq('user_id', userId);
+        
+        tg.showAlert(`🎉 КОМБО! Вы выиграли ${rewardName} и ${prize} ⭐!`);
     }
+    init();
+}
 
-    async function onMainAction() {
-        if (!isPlaying) {
-            isPlaying = true; opened = 0; mines = [...Array(25).keys()].sort(() => 0.5 - Math.random()).slice(0, 3);
-            document.getElementById('btn-main').innerText = "ЗАБРАТЬ";
-            document.getElementById('btn-main').classList.add('btn-cashout');
-            document.getElementById('stats-area').classList.remove('hidden');
-            render();
-        } else {
-            // Логика победы
-            history.push(true);
-            finish(true);
-        }
-    }
-
-    function render() {
-        const grid = document.getElementById('grid'); grid.innerHTML = '';
-        for(let i=0; i<25; i++) {
-            const cell = document.createElement('div'); cell.className = 'cell';
-            cell.onclick = () => {
-                if(!isPlaying || cell.classList.contains('open')) return;
-                cell.classList.add('open');
-                if(mines.includes(i)) { history.push(false); cell.innerHTML = '💣'; finish(false); }
-                else { opened++; cell.innerHTML = '💎'; document.getElementById('cur-mult').innerText = (1 + opened * 0.4).toFixed(2) + 'x'; }
-            };
-            grid.appendChild(cell);
-        }
-    }
-
-    function finish(win) {
-        isPlaying = false;
-        document.getElementById('btn-main').classList.remove('btn-cashout');
-        document.getElementById('btn-main').innerText = "ИГРАТЬ";
-        document.getElementById('stats-area').classList.add('hidden');
-        sync();
-    }
-
-    sync(); render();
+init();
+tg.ready();
 </script>
 </body>
 </html>

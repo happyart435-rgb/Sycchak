@@ -2,31 +2,35 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Nowear Slots Pro</title>
+    <title>Nowear Casino</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #000; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        .slot-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; border: 4px solid #d4af37; padding: 5px; width: 350px; height: 300px; overflow: hidden; background: #222; }
-        .reel { display: flex; flex-direction: column; transition: transform 1.5s cubic-bezier(0.1, 0, 0, 1); }
-        .cell { height: 75px; display: flex; align-items: center; justify-content: center; }
-        .cell img { width: 50px; height: 50px; }
+        body { background: #0f0a02; color: white; }
+        .slot-reel { transition: transform 2s cubic-bezier(0.1, 0, 0, 1); }
+        .cell { height: 80px; display: flex; align-items: center; justify-content: center; border: 1px solid #332000; }
+        .cell img { width: 60px; height: 60px; object-fit: contain; }
+        #win-display { display: none; position: absolute; top: 30%; left: 10%; right: 10%; background: #d4af37; color: black; padding: 20px; text-align: center; border-radius: 20px; font-weight: 900; font-size: 24px; z-index: 10; }
     </style>
 </head>
-<body>
+<body class="p-4">
 
-<div id="bal">Баланс: загрузка...</div>
-<div class="slot-container" id="grid">
-    <div class="reel" id="r0"></div><div class="reel" id="r1"></div><div class="reel" id="r2"></div><div class="reel" id="r3"></div><div class="reel" id="r4"></div>
+<div id="win-display">🎉 ПОБЕДА! +<span id="win-amount">0</span> ⭐</div>
+
+<div class="flex justify-between items-center mb-6 bg-black/40 p-3 rounded-xl border border-yellow-700">
+    <div id="balance" class="font-bold text-xl">Загрузка...</div>
 </div>
-<button id="spin-btn" onclick="spin()">КРУТИТЬ (25 ⭐)</button>
+
+<div class="grid grid-cols-5 gap-1 bg-[#1a0b1a] p-2 rounded-2xl border-4 border-yellow-700 overflow-hidden h-[350px]">
+    <div id="reel0" class="slot-reel"></div><div id="reel1" class="slot-reel"></div>
+    <div id="reel2" class="slot-reel"></div><div id="reel3" class="slot-reel"></div>
+    <div id="reel4" class="slot-reel"></div>
+</div>
 
 <script>
-// Твои ключи (проверь, чтобы URL был правильный)
 const SB = supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz');
-const userId = '8015661230';
-
-// ИСПОЛЬЗУЕМ ТВОИ ИМЕНА ФАЙЛОВ ИЗ СПИСКА
+const userId = Telegram.WebApp.initDataUnsafe?.user?.id || '8015661230';
 const ITEMS = {
     "star.png": { name: "Pure Star", chance: 100 },
     "paska.jpg": { name: "Easter Cake", chance: 90 },
@@ -79,54 +83,63 @@ const ITEMS = {
     "costum.jpg": { name: "Royal Costume", chance: 0.5 },
     "helmet.png": { name: "Spartan Helmet", chance: 0.5 }
 };
+    
+const itemKeys = Object.keys(ITEMS); // Создаем массив ключей один раз
 
-let stars = 0, isBonus = false, bonusSpins = 0;
-
-async function init() {
-    try {
-        let { data, error } = await SB.from('users').select('stars').eq('user_id', userId).maybeSingle();
-        if (error || !data) {
-            console.error("Ошибка БД:", error);
-            stars = 0; // На случай если базы нет
-        } else {
-            stars = data.stars;
-        }
-        document.getElementById('bal').innerText = `Баланс: ${stars} ⭐`;
-        render();
-    } catch(e) { alert("Ошибка подключения к базе"); }
-}
-
-function render() {
-    for(let i=0; i<5; i++) {
+function updateReels() {
+    document.querySelectorAll('.slot-reel').forEach(reel => {
         let html = '';
-        for(let j=0; j<10; j++) {
-            let key = Object.keys(ITEMS)[Math.floor(Math.random()*Object.keys(ITEMS).length)];
-            html += `<div class="cell"><img src="${ITEMS[key].img}"></div>`;
+        for(let i=0; i<15; i++) { // Увеличил количество элементов для плавности
+            // Правильный выбор случайного ключа
+            let randomKey = itemKeys[Math.floor(Math.random() * itemKeys.length)];
+            html += `<div class="cell"><img src="img/${randomKey}"></div>`;
         }
-        document.getElementById('r'+i).innerHTML = html;
-    }
+        reel.innerHTML = html;
+    });
 }
 
 async function spin() {
-    if (stars < 25 && !isBonus) return alert("Мало звезд!");
+    const bet = parseInt(document.getElementById('bet-input')?.value) || 25;
+    const btn = document.getElementById('spin-btn');
     
-    document.getElementById('spin-btn').disabled = true;
-    document.querySelectorAll('.reel').forEach(r => r.style.transform = `translateY(-400px)`);
+    // Проверка баланса
+    const { data: u } = await SB.from('users').select('stars').eq('user_id', userId).single();
+    if (!u || u.stars < bet) return alert("Недостаточно звезд!");
 
+    btn.disabled = true;
+    updateReels(); // Генерируем новые картинки
+    
+    // Запускаем анимацию
+    document.querySelectorAll('.slot-reel').forEach(r => {
+        r.style.transition = 'transform 2s cubic-bezier(0.1, 0, 0, 1)';
+        r.style.transform = `translateY(-800px)`; 
+    });
+    
     setTimeout(async () => {
-        // Логика победы тут...
-        if (!isBonus) stars -= 25;
+        let win = Math.random() > 0.7 ? bet * 3 : 0;
         
-        let { error } = await SB.from('users').update({ stars }).eq('user_id', userId);
-        if (error) alert("Ошибка сохранения в базу!");
+        if (win > 0) {
+            document.getElementById('win-amount').innerText = win;
+            document.getElementById('win-display').style.display = 'block';
+            setTimeout(() => document.getElementById('win-display').style.display = 'none', 3000);
+        }
         
-        document.getElementById('bal').innerText = `Баланс: ${stars} ⭐`;
-        document.querySelectorAll('.reel').forEach(r => r.style.transform = `translateY(0)`);
-        document.getElementById('spin-btn').disabled = false;
-    }, 1500);
+        // Синхронизация с БД
+        await SB.from('users').update({ stars: u.stars - bet + win }).eq('user_id', userId);
+        document.getElementById('balance').innerText = `${u.stars - bet + win} ⭐`;
+        
+        // Сброс анимации без транзишена, чтобы мгновенно вернуть в начало
+        document.querySelectorAll('.slot-reel').forEach(r => {
+            r.style.transition = 'none';
+            r.style.transform = `translateY(0)`;
+        });
+        
+        btn.disabled = false;
+    }, 2000);
 }
 
 init();
+updateReels();
 </script>
 </body>
 </html>

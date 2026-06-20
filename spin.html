@@ -2,89 +2,124 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NowearSlots</title>
+    <title>Nowear Slots</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .slot { width: 80px; height: 80px; background: #1a140a; border: 2px solid #d4af37; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
-        .slot img { width: 60px; height: 60px; object-fit: contain; }
-    </style>
 </head>
-<body class="bg-[#0d0a05] text-white flex flex-col items-center min-h-screen pt-10">
+<body class="bg-[#0f0a02] text-white p-4">
 
-    <div class="mb-8 text-center">
-        <h2 class="text-[#d4af37] font-black text-2xl uppercase italic">СЛОТЫ</h2>
-        <p id="balance" class="text-white font-bold">Баланс: 0 ⭐</p>
-    </div>
+<div class="text-center mb-6">
+    <h1 class="text-yellow-500 font-black text-2xl uppercase">Nowear Slots</h1>
+    <div id="balance" class="text-lg font-bold">Баланс: -- ⭐</div>
+    <input type="number" id="bet" value="25" min="25" step="10" class="text-black p-2 mt-2 rounded w-24 text-center">
+</div>
 
-    <div class="flex gap-4 mb-8">
-        <div id="s1" class="slot"><img src="img/star.png"></div>
-        <div id="s2" class="slot"><img src="img/star.png"></div>
-        <div id="s3" class="slot"><img src="img/star.png"></div>
-    </div>
+<div id="grid" class="grid grid-cols-5 gap-2 bg-[#1a140a] p-4 rounded-xl border border-yellow-600">
+    <div id="col0" class="space-y-2"></div>
+    <div id="col1" class="space-y-2"></div>
+    <div id="col2" class="space-y-2"></div>
+    <div id="col3" class="space-y-2"></div>
+    <div id="col4" class="space-y-2"></div>
+</div>
 
-    <button id="btn-spin" onclick="startSpin()" class="bg-[#d4af37] text-black font-black px-10 py-4 rounded-2xl uppercase hover:scale-105 transition">
-        КРУТИТЬ (50 ⭐)
-    </button>
+<button id="spin-btn" onclick="play()" class="w-full mt-6 bg-yellow-500 text-black font-black py-4 rounded-full uppercase text-xl">Крутить</button>
 
 <script>
-const tg = window.Telegram.WebApp;
-const userId = String(tg.initDataUnsafe?.user?.id || '8015661230');
 const SB = supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz');
+const userId = String(window.Telegram.WebApp.initDataUnsafe?.user?.id || '8015661230');
 
 const ITEMS = {
-    "star.png": { name: "Pure Star", price: 5 },
-    "bear.png": { name: "Honey Bear", price: 3500 },
-    "car.png": { name: "Sports Car", price: 5000 },
-    "cvetok.png": { name: "Wild Flower", price: 1000 },
-    "kepka.png": { name: "Legendary Cap", price: 100000 }
+    "star.png": { name: "Pure Star", chance: 100 },
+    "paska.jpg": { name: "Easter Cake", chance: 90 },
+    "otkritka.jpg": { name: "Peace Dove", chance: 85 },
+    "koks.jpg": { name: "Party Cocktail", chance: 80 },
+    "botinok.png": { name: "Old Boot", chance: 70 },
+    "kalendar.png": { name: "Event Calendar", chance: 70 },
+    "1may.jpg": { name: "1 May Exclusive", chance: 60 },
+    "bear.png": { name: "Honey Bear", chance: 50 },
+    "koktel.png": { name: "Toxic Mix", chance: 50 },
+    "dog.png": { name: "Rich Dog", chance: 50 },
+    "shapka.png": { name: "Santa Hat", chance: 50 },
+    "zmei.png": { name: "Snake Friend", chance: 50 },
+    "lucky.jpg": { name: "Clover Lucky", chance: 50 },
+    "box.png": { name: "Jack in Box", chance: 45 },
+    "krovatka.jpg": { name: "Baby Bow", chance: 45 },
+    "yayko.png": { name: "Dragon Egg", chance: 45 },
+    "meczcc.png": { name: "Faith Amulet", chance: 45 },
+    "kryg.PNG": { name: "Snow Globe", chance: 45 },
+    "gribb.PNG": { name: "Spy Agaric", chance: 45 },
+    "booox.png": { name: "Berry Box", chance: 40 },
+    "mafin.jpg": { name: "Sugar Muffin", chance: 40 },
+    "metch.png": { name: "Star Saber", chance: 40 },
+    "zhele.png": { name: "Slime Jelly", chance: 40 },
+    "zirka.PNG": { name: "Hanging Star", chance: 35 },
+    "cvetk.PNG": { name: "Sakura Flower", chance: 30 },
+    "book.jpg": { name: "Ancient Book", chance: 25 },
+    "cvetok.png": { name: "Wild Flower", chance: 25 },
+    "shar.jpg": { name: "Magic Ball", chance: 25 },
+    "tyfli.PNG": { name: "Sky Stilettos", chance: 20 },
+    "rozza.png": { name: "Velvet Rose", chance: 15 },
+    "heart.png": { name: "Heart Lock", chance: 15 },
+    "sshapka.PNG": { name: "Khabib's Papakha", chance: 12 },
+    "colso.png": { name: "Blue Diamond", chance: 10 },
+    "soska.jpg": { name: "Diamond Pacifier", chance: 8 },
+    "ciga.png": { name: "Luxury Cigar", chance: 8 },
+    "ccolso2.png": { name: "Star Ring", chance: 8 },
+    "shlem.png": { name: "Biker Helmet", chance: 6 },
+    "orel.jpg": { name: "Golden Eagle", chance: 4 },
+    "car.png": { name: "Sports Car", chance: 4 },
+    "chemodan.jpg": { name: "Traveler Case", chance: 4 },
+    "grob.jpg": { name: "Ancient Coffin", chance: 4 },
+    "gyba.png": { name: "Lava Lips", chance: 4 },
+    "kirpitch.jpg": { name: "Golden Brick", chance: 2 },
+    "dyxi.png": { name: "Gold Perfume", chance: 2 },
+    "kot.png": { name: "Atomic Cat", chance: 2 },
+    "obyv.jpg": { name: "Sneakers Pro", chance: 2 },
+    "statyya.jpg": { name: "Hero Statue", chance: 1 },
+    "kepka.png": { name: "Legendary Cap", chance: 0.5 },
+    "costum.jpg": { name: "Royal Costume", chance: 0.5 },
+    "helmet.png": { name: "Spartan Helmet", chance: 0.5 }
 };
-const keys = Object.keys(ITEMS);
 
-let user = null;
-
-async function init() {
-    const { data } = await SB.from('users').select('*').eq('user_id', userId).maybeSingle();
-    user = data;
-    document.getElementById('balance').innerText = `Баланс: ${user.stars || 0} ⭐`;
-}
-
-async function startSpin() {
-    if (user.stars < 50) return tg.showAlert("Недостаточно звезд!");
-    
-    // 1. Списание
-    const { error } = await SB.from('users').update({ stars: user.stars - 50 }).eq('user_id', userId);
-    if (error) return;
-
-    // 2. Генерация результатов
-    const r1 = keys[Math.floor(Math.random() * keys.length)];
-    const r2 = keys[Math.floor(Math.random() * keys.length)];
-    const r3 = keys[Math.floor(Math.random() * keys.length)];
-
-    document.getElementById('s1').innerHTML = `<img src="img/${r1}">`;
-    document.getElementById('s2').innerHTML = `<img src="img/${r2}">`;
-    document.getElementById('s3').innerHTML = `<img src="img/${r3}">`;
-
-    // 3. Проверка комбо
-    if (r1 === r2 && r2 === r3) {
-        const rewardName = ITEMS[r1].name;
-        const prize = ITEMS[r1].price; // Или множитель от этого значения
-        
-        const newInv = [...(user.inventory || []), { img: 'img/' + r1, id: Date.now() }];
-        await SB.from('users').update({ 
-            stars: user.stars - 50 + prize,
-            inventory: newInv
-        }).eq('user_id', userId);
-        
-        tg.showAlert(`🎉 КОМБО! Вы выиграли ${rewardName} и ${prize} ⭐!`);
+function getRandomItem(rareOnly = false) {
+    let items = Object.keys(ITEMS).filter(k => rareOnly ? ITEMS[k].chance < 30 : true);
+    let total = items.reduce((s, k) => s + ITEMS[k].chance, 0);
+    let r = Math.random() * total;
+    for (let k of items) {
+        r -= ITEMS[k].chance;
+        if (r <= 0) return k;
     }
-    init();
 }
 
-init();
-tg.ready();
+async function play() {
+    const bet = parseInt(document.getElementById('bet').value);
+    let { data: u } = await SB.from('users').select('stars, inventory').eq('user_id', userId).single();
+    if (u.stars < bet) return alert("Недостаточно звезд!");
+
+    // Генерация 5x3
+    let grid = Array.from({length: 5}, () => [getRandomItem(), getRandomItem(), getRandomItem()]);
+    grid.forEach((col, i) => document.getElementById(`col${i}`).innerHTML = col.map(img => `<img src="img/${img}" class="w-16 h-16 object-contain bg-white/10 rounded">`).join(''));
+
+    // Бонуска: 1 звезда в каждом столбце + 5% шанс
+    let isBonus = grid.every(col => col.includes('star.png')) && Math.random() < 0.05;
+    let invUpdates = [];
+
+    if (isBonus) {
+        alert("🔥 БОНУСКА! 10 бесплатных прокрутов!");
+        for(let i=0; i<10; i++) invUpdates.push(getRandomItem(true));
+    }
+
+    // Запись в базу
+    let newInv = [...(u.inventory || []), ...invUpdates.map(img => ({img: 'img/'+img, id: Date.now()}))];
+    await SB.from('users').update({ stars: u.stars - bet, inventory: newInv }).eq('user_id', userId);
+    
+    // Обновить баланс на экране
+    document.getElementById('balance').innerText = `Баланс: ${u.stars - bet} ⭐`;
+}
+
+// Инициализация баланса
+SB.from('users').select('stars').eq('user_id', userId).single().then(r => document.getElementById('balance').innerText = `Баланс: ${r.data.stars} ⭐`);
 </script>
 </body>
 </html>

@@ -3,141 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <title>Nowear Slots Pro</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: radial-gradient(circle, #4a3810, #000); color: #ffd700; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; }
-        .header { background: rgba(0,0,0,0.8); padding: 15px; border: 2px solid #d4af37; border-radius: 10px; margin: 10px; width: 350px; text-align: center; }
-        .slot-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; border: 6px solid #d4af37; padding: 5px; width: 350px; height: 300px; overflow: hidden; background: #222; border-radius: 15px; }
-        .reel { display: flex; flex-direction: column; }
-        .cell { height: 75px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #444; }
-        .cell img { width: 50px; height: 50px; object-fit: contain; }
-        .controls { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; width: 350px; }
-        button { padding: 15px; background: #d4af37; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; color: black; }
-        .bonus-btn { background: #ff4500; color: white; }
+        body { background: #1a1a1a; color: #ffd700; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        .header { background: #000; padding: 10px; border: 2px solid #d4af37; border-radius: 10px; margin: 10px; width: 350px; text-align: center; }
+        .slot-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; border: 4px solid #d4af37; width: 350px; height: 300px; overflow: hidden; background: #222; }
+        .reel { display: flex; flex-direction: column; transition: transform 1.5s cubic-bezier(0.1, 0, 0, 1); }
+        .cell { height: 75px; display: flex; align-items: center; justify-content: center; }
+        .cell img { width: 50px; height: 50px; }
     </style>
 </head>
 <body>
 
 <div class="header">
     <div id="bal">Баланс: -- ⭐</div>
-    <div id="win-display" style="font-size: 1.2em; color: #00ff00;">Выигрыш: 0 ⭐</div>
+    <div id="win-display">Выигрыш: 0 ⭐</div>
 </div>
 
 <div class="slot-container" id="grid">
     <div class="reel" id="r0"></div><div class="reel" id="r1"></div><div class="reel" id="r2"></div><div class="reel" id="r3"></div><div class="reel" id="r4"></div>
 </div>
 
-<div class="controls">
-    <label>Ставка: <input type="number" id="bet-input" value="25" style="width: 60px; color: black;"></label>
-    <button id="spin-btn" onclick="spin()">КРУТИТЬ</button>
-    <button class="bonus-btn" onclick="alert('Бонус куплен! Механика в разработке')">КУПИТЬ БОНУСКУ (x100)</button>
+<div class="controls" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+    <input type="number" id="bet-input" value="25">
+    <button onclick="spin(false)">КРУТИТЬ</button>
+    <button onclick="spin(true)" style="background: #ff4500; color: white;">БОНУСКА (x10)</button>
 </div>
 
 <script>
-const SB = supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz');
-const userId = '8015661230';
-
-// Твой объект ITEMS
-const ITEMS_OBJ = {
-    "star.png": { name: "Pure Star", chance: 100 },
-    "paska.jpg": { name: "Easter Cake", chance: 90 },
-    "otkritka.jpg": { name: "Peace Dove", chance: 85 },
-    "koks.jpg": { name: "Party Cocktail", chance: 80 },
-    "botinok.png": { name: "Old Boot", chance: 70 },
-    "kalendar.png": { name: "Event Calendar", chance: 70 },
-    "1may.jpg": { name: "1 May Exclusive", chance: 60 },
-    "bear.png": { name: "Honey Bear", chance: 50 },
-    "koktel.png": { name: "Toxic Mix", chance: 50 },
-    "dog.png": { name: "Rich Dog", chance: 50 },
-    "shapka.png": { name: "Santa Hat", chance: 50 },
-    "zmei.png": { name: "Snake Friend", chance: 50 },
-    "lucky.jpg": { name: "Clover Lucky", chance: 50 },
-    "box.png": { name: "Jack in Box", chance: 45 },
-    "krovatka.jpg": { name: "Baby Bow", chance: 45 },
-    "yayko.png": { name: "Dragon Egg", chance: 45 },
-    "meczcc.png": { name: "Faith Amulet", chance: 45 },
-    "kryg.PNG": { name: "Snow Globe", chance: 45 },
-    "gribb.PNG": { name: "Spy Agaric", chance: 45 },
-    "booox.png": { name: "Berry Box", chance: 40 },
-    "mafin.jpg": { name: "Sugar Muffin", chance: 40 },
-    "metch.png": { name: "Star Saber", chance: 40 },
-    "zhele.png": { name: "Slime Jelly", chance: 40 },
-    "zirka.PNG": { name: "Hanging Star", chance: 35 },
-    "cvetk.PNG": { name: "Sakura Flower", chance: 30 },
-    "book.jpg": { name: "Ancient Book", chance: 25 },
-    "cvetok.png": { name: "Wild Flower", chance: 25 },
-    "shar.jpg": { name: "Magic Ball", chance: 25 },
-    "tyfli.PNG": { name: "Sky Stilettos", chance: 20 },
-    "rozza.png": { name: "Velvet Rose", chance: 15 },
-    "heart.png": { name: "Heart Lock", chance: 15 },
-    "sshapka.PNG": { name: "Khabib's Papakha", chance: 12 },
-    "colso.png": { name: "Blue Diamond", chance: 10 },
-    "soska.jpg": { name: "Diamond Pacifier", chance: 8 },
-    "ciga.png": { name: "Luxury Cigar", chance: 8 },
-    "ccolso2.png": { name: "Star Ring", chance: 8 },
-    "shlem.png": { name: "Biker Helmet", chance: 6 },
-    "orel.jpg": { name: "Golden Eagle", chance: 4 },
-    "car.png": { name: "Sports Car", chance: 4 },
-    "chemodan.jpg": { name: "Traveler Case", chance: 4 },
-    "grob.jpg": { name: "Ancient Coffin", chance: 4 },
-    "gyba.png": { name: "Lava Lips", chance: 4 },
-    "kirpitch.jpg": { name: "Golden Brick", chance: 2 },
-    "dyxi.png": { name: "Gold Perfume", chance: 2 },
-    "kot.png": { name: "Atomic Cat", chance: 2 },
-    "obyv.jpg": { name: "Sneakers Pro", chance: 2 },
-    "statyya.jpg": { name: "Hero Statue", chance: 1 },
-    "kepka.png": { name: "Legendary Cap", chance: 0.5 },
-    "costum.jpg": { name: "Royal Costume", chance: 0.5 },
-    "helmet.png": { name: "Spartan Helmet", chance: 0.5 }
+// Добавляем множители каждому символу
+const ITEMS = {
+    "star.png": { name: "Pure Star", chance: 100, x: 1 },
+    "paska.jpg": { name: "Easter Cake", chance: 90, x: 1.2 },
+    "otkritka.jpg": { name: "Peace Dove", chance: 85, x: 1.5 },
+    "koks.jpg": { name: "Party Cocktail", chance: 80, x: 1.8 },
+    "botinok.png": { name: "Old Boot", chance: 70, x: 2 },
+    "kalendar.png": { name: "Event Calendar", chance: 70, x: 2.2 },
+    "1may.jpg": { name: "1 May Exclusive", chance: 60, x: 2.5 },
+    "bear.png": { name: "Honey Bear", chance: 50, x: 3 },
+    "koktel.png": { name: "Toxic Mix", chance: 50, x: 3 },
+    "dog.png": { name: "Rich Dog", chance: 50, x: 3 },
+    "shapka.png": { name: "Santa Hat", chance: 50, x: 3 },
+    "zmei.png": { name: "Snake Friend", chance: 50, x: 3 },
+    "lucky.jpg": { name: "Clover Lucky", chance: 50, x: 3 },
+    "box.png": { name: "Jack in Box", chance: 45, x: 4 },
+    "krovatka.jpg": { name: "Baby Bow", chance: 45, x: 4 },
+    "yayko.png": { name: "Dragon Egg", chance: 45, x: 4 },
+    "meczcc.png": { name: "Faith Amulet", chance: 45, x: 4 },
+    "kryg.PNG": { name: "Snow Globe", chance: 45, x: 4 },
+    "gribb.PNG": { name: "Spy Agaric", chance: 45, x: 4 },
+    "booox.png": { name: "Berry Box", chance: 40, x: 5 },
+    "mafin.jpg": { name: "Sugar Muffin", chance: 40, x: 5 },
+    "metch.png": { name: "Star Saber", chance: 40, x: 5 },
+    "zhele.png": { name: "Slime Jelly", chance: 40, x: 5 },
+    "zirka.PNG": { name: "Hanging Star", chance: 35, x: 6 },
+    "cvetk.PNG": { name: "Sakura Flower", chance: 30, x: 7 },
+    "book.jpg": { name: "Ancient Book", chance: 25, x: 8 },
+    "cvetok.png": { name: "Wild Flower", chance: 25, x: 8 },
+    "shar.jpg": { name: "Magic Ball", chance: 25, x: 8 },
+    "tyfli.PNG": { name: "Sky Stilettos", chance: 20, x: 10 },
+    "rozza.png": { name: "Velvet Rose", chance: 15, x: 15 },
+    "heart.png": { name: "Heart Lock", chance: 15, x: 15 },
+    "sshapka.PNG": { name: "Khabib's Papakha", chance: 12, x: 20 },
+    "colso.png": { name: "Blue Diamond", chance: 10, x: 25 },
+    "soska.jpg": { name: "Diamond Pacifier", chance: 8, x: 30 },
+    "ciga.png": { name: "Luxury Cigar", chance: 8, x: 30 },
+    "ccolso2.png": { name: "Star Ring", chance: 8, x: 30 },
+    "shlem.png": { name: "Biker Helmet", chance: 6, x: 40 },
+    "orel.jpg": { name: "Golden Eagle", chance: 4, x: 50 },
+    "car.png": { name: "Sports Car", chance: 4, x: 50 },
+    "chemodan.jpg": { name: "Traveler Case", chance: 4, x: 50 },
+    "grob.jpg": { name: "Ancient Coffin", chance: 4, x: 50 },
+    "gyba.png": { name: "Lava Lips", chance: 4, x: 50 },
+    "kirpitch.jpg": { name: "Golden Brick", chance: 2, x: 100 },
+    "dyxi.png": { name: "Gold Perfume", chance: 2, x: 100 },
+    "kot.png": { name: "Atomic Cat", chance: 2, x: 100 },
+    "obyv.jpg": { name: "Sneakers Pro", chance: 2, x: 100 },
+    "statyya.jpg": { name: "Hero Statue", chance: 1, x: 200 },
+    "kepka.png": { name: "Legendary Cap", chance: 0.5, x: 500 },
+    "costum.jpg": { name: "Royal Costume", chance: 0.5, x: 500 },
+    "helmet.png": { name: "Spartan Helmet", chance: 0.5, x: 500 }
 };
-// Превращаем ключи в массив для случайного выбора
-const itemFiles = Object.keys(ITEMS_OBJ);
+const itemFiles = Object.keys(ITEMS);
 
-async function spin() {
-    const bet = parseInt(document.getElementById('bet-input').value);
-    const btn = document.getElementById('spin-btn');
-    btn.disabled = true;
+function getResult() {
+    // Генерируем 5 случайных символов, которые выпадут на линии
+    return Array.from({length: 5}, () => itemFiles[Math.floor(Math.random() * itemFiles.length)]);
+}
 
-    // Генерируем новые картинки
-    document.querySelectorAll('.reel').forEach(reel => {
+async function spin(isBonus) {
+    const baseBet = parseInt(document.getElementById('bet-input').value);
+    const totalBet = isBonus ? baseBet * 10 : baseBet;
+    
+    // 1. Предварительно определяем результат
+    const result = getResult(); 
+    
+    // 2. Заполняем барабаны (последний элемент - наш результат)
+    document.querySelectorAll('.reel').forEach((reel, i) => {
         let html = '';
-        for(let j=0; j<10; j++) {
-            let randomFile = itemFiles[Math.floor(Math.random() * itemFiles.length)];
-            html += `<div class="cell"><img src="img/${randomFile}"></div>`;
+        for(let j=0; j<8; j++) {
+            html += `<div class="cell"><img src="img/${itemFiles[Math.floor(Math.random() * itemFiles.length)]}"></div>`;
         }
+        // В конец добавляем наш "выигрышный" символ
+        html += `<div class="cell"><img src="img/${result[i]}"></div>`;
         reel.innerHTML = html;
-        // Анимация
-        reel.style.transition = 'transform 1.5s cubic-bezier(0.1, 0, 0, 1)';
-        reel.style.transform = `translateY(-500px)`;
+        reel.style.transform = `translateY(-450px)`;
     });
 
-    setTimeout(async () => {
-        // Логика выигрыша
-        let win = Math.random() > 0.7 ? bet * 2 : 0;
+    setTimeout(() => {
+        // 3. Считаем выигрыш (например, если все символы одинаковые)
+        const allSame = result.every(val => val === result[0]);
+        let win = allSame ? totalBet * ITEMS[result[0]].x : 0;
+        
         document.getElementById('win-display').innerText = `Выигрыш: ${win} ⭐`;
         
-        // Синхронизация БД
-        let { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
-        let newStars = (data.stars || 0) - bet + win;
-        await SB.from('users').update({ stars: newStars }).eq('user_id', userId);
+        // Тут нужно добавить запрос к Supabase для обновления баланса
         
-        document.getElementById('bal').innerText = `Баланс: ${newStars} ⭐`;
-
-        // Сброс
         document.querySelectorAll('.reel').forEach(r => {
             r.style.transition = 'none';
             r.style.transform = `translateY(0)`;
         });
-        btn.disabled = false;
-    }, 1500);
+    }, 1600);
 }
-
-// Инициализация
-(async () => {
-    let { data } = await SB.from('users').select('stars').eq('user_id', userId).maybeSingle();
-    document.getElementById('bal').innerText = `Баланс: ${data?.stars || 0} ⭐`;
-})();
 </script>
 </body>
 </html>

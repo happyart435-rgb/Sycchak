@@ -2,33 +2,39 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Nowear Slots</title>
+    <title>Nowear Slots Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #1a0b1a; color: white; margin: 0; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        .slot-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: #330033; padding: 10px; border: 6px solid #d4af37; border-radius: 15px; width: 95vw; height: 400px; overflow: hidden; }
+        .reel { display: flex; flex-direction: column; transition: transform 2s cubic-bezier(0.1, 0, 0, 1); }
+        .cell { height: 100px; display: flex; align-items: center; justify-content: center; border: 1px solid #4a004a; }
+        .cell img { width: 70px; height: 70px; object-fit: contain; }
+        .panel { padding: 20px; text-align: center; }
+        button { padding: 15px 40px; background: #d4af37; border: none; border-radius: 50px; font-weight: 900; font-size: 20px; cursor: pointer; }
+    </style>
 </head>
-<body class="bg-[#0f0a02] text-white p-4">
+<body>
 
-<div class="text-center mb-6">
-    <h1 class="text-yellow-500 font-black text-2xl uppercase">Nowear Slots</h1>
-    <div id="balance" class="text-lg font-bold">Баланс: -- ⭐</div>
-    <input type="number" id="bet" value="25" min="25" step="10" class="text-black p-2 mt-2 rounded w-24 text-center">
+<div id="ui" class="panel">
+    <div id="bal">Баланс: -- ⭐</div>
+    <div id="bonus-status"></div>
 </div>
 
-<div id="grid" class="grid grid-cols-5 gap-2 bg-[#1a140a] p-4 rounded-xl border border-yellow-600">
-    <div id="col0" class="space-y-2"></div>
-    <div id="col1" class="space-y-2"></div>
-    <div id="col2" class="space-y-2"></div>
-    <div id="col3" class="space-y-2"></div>
-    <div id="col4" class="space-y-2"></div>
+<div class="slot-container" id="grid">
+    <div class="reel" id="r0"></div><div class="reel" id="r1"></div><div class="reel" id="r2"></div><div class="reel" id="r3"></div><div class="reel" id="r4"></div>
 </div>
 
-<button id="spin-btn" onclick="play()" class="w-full mt-6 bg-yellow-500 text-black font-black py-4 rounded-full uppercase text-xl">Крутить</button>
+<div class="panel">
+    <button id="spin-btn" onclick="spin()">КРУТИТЬ (25 ⭐)</button>
+</div>
 
 <script>
 const SB = supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz');
-const userId = String(window.Telegram.WebApp.initDataUnsafe?.user?.id || '8015661230');
+const userId = '8015661230';
 
+// Твой список с шансами (чем больше число, тем чаще выпадает)
 const ITEMS = {
     "star.png": { name: "Pure Star", chance: 100 },
     "paska.jpg": { name: "Easter Cake", chance: 90 },
@@ -82,44 +88,71 @@ const ITEMS = {
     "helmet.png": { name: "Spartan Helmet", chance: 0.5 }
 };
 
-function getRandomItem(rareOnly = false) {
-    let items = Object.keys(ITEMS).filter(k => rareOnly ? ITEMS[k].chance < 30 : true);
-    let total = items.reduce((s, k) => s + ITEMS[k].chance, 0);
+let stars = 0, isBonus = false, bonusSpins = 0;
+
+async function init() {
+    let { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
+    stars = data.stars;
+    document.getElementById('bal').innerText = `Баланс: ${stars} ⭐`;
+    render();
+}
+
+function render() {
+    for(let i=0; i<5; i++) {
+        let html = '';
+        for(let j=0; j<20; j++) html += `<div class="cell"><img src="img/${getRandomItem()}"></div>`;
+        document.getElementById('r'+i).innerHTML = html;
+    }
+}
+
+function getRandomItem(rare = false) {
+    let list = Object.keys(ITEMS).filter(k => rare ? ITEMS[k].chance < 10 : true);
+    let total = list.reduce((s, k) => s + ITEMS[k].chance, 0);
     let r = Math.random() * total;
-    for (let k of items) {
+    for (let k of list) {
         r -= ITEMS[k].chance;
         if (r <= 0) return k;
     }
 }
 
-async function play() {
-    const bet = parseInt(document.getElementById('bet').value);
-    let { data: u } = await SB.from('users').select('stars, inventory').eq('user_id', userId).single();
-    if (u.stars < bet) return alert("Недостаточно звезд!");
+async function spin() {
+    if (!isBonus && stars < 25) return alert("Мало звезд!");
+    document.getElementById('spin-btn').disabled = true;
 
-    // Генерация 5x3
-    let grid = Array.from({length: 5}, () => [getRandomItem(), getRandomItem(), getRandomItem()]);
-    grid.forEach((col, i) => document.getElementById(`col${i}`).innerHTML = col.map(img => `<img src="img/${img}" class="w-16 h-16 object-contain bg-white/10 rounded">`).join(''));
+    // Анимация
+    document.querySelectorAll('.reel').forEach(r => r.style.transform = `translateY(-1500px)`);
 
-    // Бонуска: 1 звезда в каждом столбце + 5% шанс
-    let isBonus = grid.every(col => col.includes('star.png')) && Math.random() < 0.05;
-    let invUpdates = [];
+    setTimeout(async () => {
+        let grid = [];
+        for(let i=0; i<5; i++) {
+            let col = [];
+            for(let j=0; j<4; j++) col.push(getRandomItem(isBonus));
+            grid.push(col);
+        }
 
-    if (isBonus) {
-        alert("🔥 БОНУСКА! 10 бесплатных прокрутов!");
-        for(let i=0; i<10; i++) invUpdates.push(getRandomItem(true));
-    }
+        // Логика бонуски: 5+ звезд на всем поле = активируем
+        let starCount = grid.flat().filter(s => s === 'star.png').length;
+        if (starCount >= 5 && !isBonus) {
+            isBonus = true; bonusSpins = 10;
+            alert("🔥 БОНУСКА! 10 ФРИСПИНОВ!");
+        }
 
-    // Запись в базу
-    let newInv = [...(u.inventory || []), ...invUpdates.map(img => ({img: 'img/'+img, id: Date.now()}))];
-    await SB.from('users').update({ stars: u.stars - bet, inventory: newInv }).eq('user_id', userId);
-    
-    // Обновить баланс на экране
-    document.getElementById('balance').innerText = `Баланс: ${u.stars - bet} ⭐`;
+        if (!isBonus) stars -= 25;
+        await SB.from('users').update({ stars }).eq('user_id', userId);
+        
+        if (isBonus) {
+            bonusSpins--;
+            document.getElementById('bonus-status').innerText = `ФРИСПИНОВ: ${bonusSpins}`;
+            if (bonusSpins <= 0) isBonus = false;
+        }
+
+        document.getElementById('bal').innerText = `Баланс: ${stars} ⭐`;
+        document.querySelectorAll('.reel').forEach(r => r.style.transform = `translateY(0)`);
+        document.getElementById('spin-btn').disabled = false;
+    }, 2000);
 }
 
-// Инициализация баланса
-SB.from('users').select('stars').eq('user_id', userId).single().then(r => document.getElementById('balance').innerText = `Баланс: ${r.data.stars} ⭐`);
+init();
 </script>
 </body>
 </html>

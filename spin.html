@@ -2,46 +2,31 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nowear Casino</title>
+    <title>Nowear Slots Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: radial-gradient(circle, #2d0a2d, #000); color: white; font-family: sans-serif; }
-        .slot-reel { transition: transform 2s cubic-bezier(0.1, 0, 0, 1); }
-        .cell { height: 80px; display: flex; align-items: center; justify-content: center; }
-        .cell img { width: 60px; height: 60px; object-fit: contain; }
+        body { background: #000; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        .slot-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; border: 4px solid #d4af37; padding: 5px; width: 350px; height: 300px; overflow: hidden; background: #222; }
+        .reel { display: flex; flex-direction: column; transition: transform 1.5s cubic-bezier(0.1, 0, 0, 1); }
+        .cell { height: 75px; display: flex; align-items: center; justify-content: center; }
+        .cell img { width: 50px; height: 50px; }
     </style>
 </head>
-<body class="p-4">
+<body>
 
-<div class="flex justify-between items-center mb-6 bg-black/40 p-3 rounded-xl border border-yellow-700">
-    <div id="user-id" class="text-sm text-yellow-500">ID: ...</div>
-    <div id="balance" class="font-bold text-xl">0 ⭐</div>
+<div id="bal">Баланс: загрузка...</div>
+<div class="slot-container" id="grid">
+    <div class="reel" id="r0"></div><div class="reel" id="r1"></div><div class="reel" id="r2"></div><div class="reel" id="r3"></div><div class="reel" id="r4"></div>
 </div>
-
-<div class="grid grid-cols-5 gap-1 bg-[#1a0b1a] p-2 rounded-2xl border-4 border-yellow-700 overflow-hidden h-[350px]">
-    <div id="reel0" class="slot-reel"></div><div id="reel1" class="slot-reel"></div>
-    <div id="reel2" class="slot-reel"></div><div id="reel3" class="slot-reel"></div>
-    <div id="reel4" class="slot-reel"></div>
-</div>
-
-<div class="mt-6 p-4 bg-black/50 rounded-xl">
-    <div class="flex justify-between items-center mb-4">
-        <span>СТАВКА:</span>
-        <input type="number" id="bet-input" value="25" step="10" min="25" class="text-black p-1 w-20 rounded font-bold">
-    </div>
-    <button id="spin-btn" onclick="spin()" class="w-full bg-yellow-600 hover:bg-yellow-500 py-4 rounded-full font-black text-2xl uppercase shadow-[0_0_20px_rgba(202,138,4,0.5)]">
-        КРУТИТЬ
-    </button>
-</div>
+<button id="spin-btn" onclick="spin()">КРУТИТЬ (25 ⭐)</button>
 
 <script>
+// Твои ключи (проверь, чтобы URL был правильный)
 const SB = supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz');
-const userId = Telegram.WebApp.initDataUnsafe?.user?.id || '8015661230';
-document.getElementById('user-id').innerText = `ID: ${userId}`;
+const userId = '8015661230';
 
+// ИСПОЛЬЗУЕМ ТВОИ ИМЕНА ФАЙЛОВ ИЗ СПИСКА
 const ITEMS = {
     "star.png": { name: "Pure Star", chance: 100 },
     "paska.jpg": { name: "Easter Cake", chance: 90 },
@@ -95,39 +80,53 @@ const ITEMS = {
     "helmet.png": { name: "Spartan Helmet", chance: 0.5 }
 };
 
-async function spin() {
-    const bet = parseInt(document.getElementById('bet-input').value);
-    const btn = document.getElementById('spin-btn');
-    
-    // 1. Списание ставки
-    const { data: u } = await SB.from('users').select('stars').eq('user_id', userId).single();
-    if(u.stars < bet) return alert("Недостаточно звезд!");
+let stars = 0, isBonus = false, bonusSpins = 0;
 
-    btn.disabled = true;
+async function init() {
+    try {
+        let { data, error } = await SB.from('users').select('stars').eq('user_id', userId).maybeSingle();
+        if (error || !data) {
+            console.error("Ошибка БД:", error);
+            stars = 0; // На случай если базы нет
+        } else {
+            stars = data.stars;
+        }
+        document.getElementById('bal').innerText = `Баланс: ${stars} ⭐`;
+        render();
+    } catch(e) { alert("Ошибка подключения к базе"); }
+}
+
+function render() {
+    for(let i=0; i<5; i++) {
+        let html = '';
+        for(let j=0; j<10; j++) {
+            let key = Object.keys(ITEMS)[Math.floor(Math.random()*Object.keys(ITEMS).length)];
+            html += `<div class="cell"><img src="${ITEMS[key].img}"></div>`;
+        }
+        document.getElementById('r'+i).innerHTML = html;
+    }
+}
+
+async function spin() {
+    if (stars < 25 && !isBonus) return alert("Мало звезд!");
     
-    // 2. Анимация
-    document.querySelectorAll('.slot-reel').forEach(r => r.style.transform = `translateY(-400px)`);
+    document.getElementById('spin-btn').disabled = true;
+    document.querySelectorAll('.reel').forEach(r => r.style.transform = `translateY(-400px)`);
 
     setTimeout(async () => {
-        // 3. Расчет результата (генерация 5x4)
-        let grid = Array.from({length: 5}, () => Array.from({length: 4}, () => ITEMS[Math.floor(Math.random()*ITEMS.length)]));
+        // Логика победы тут...
+        if (!isBonus) stars -= 25;
         
-        // 4. Логика победы (проверка комбинаций)
-        let win = checkWin(grid, bet);
+        let { error } = await SB.from('users').update({ stars }).eq('user_id', userId);
+        if (error) alert("Ошибка сохранения в базу!");
         
-        // 5. Обновление БД
-        await SB.from('users').update({ stars: u.stars - bet + win }).eq('user_id', userId);
-        
-        alert(win > 0 ? `🎉 ВЫИГРАЛИ: ${win} звезд!` : "Попробуйте снова!");
-        btn.disabled = false;
-        document.querySelectorAll('.slot-reel').forEach(r => r.style.transform = `translateY(0)`);
-    }, 2000);
+        document.getElementById('bal').innerText = `Баланс: ${stars} ⭐`;
+        document.querySelectorAll('.reel').forEach(r => r.style.transform = `translateY(0)`);
+        document.getElementById('spin-btn').disabled = false;
+    }, 1500);
 }
 
-function checkWin(grid, bet) {
-    // Тут логика: если в ряду 3+ одинаковых символа -> win = bet * множитель
-    return Math.random() > 0.8 ? bet * 2 : 0; // Пример
-}
+init();
 </script>
 </body>
 </html>

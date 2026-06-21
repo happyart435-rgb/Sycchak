@@ -614,6 +614,7 @@ function renderLootPreview() {
     }).join('');
 }
 
+// Изменено название проекта во время рендера на NOWEARSPIN
 function render() {
     const tGrid = document.getElementById('tickets-container');
     const mGrid = document.getElementById('main-grid');
@@ -632,7 +633,6 @@ function startLiveDrop() {
     setInterval(() => {
         const keys = Object.keys(ITEMS);
         const it = ITEMS[keys[Math.floor(Math.random()*keys.length)]];
-        if (!it) return;
         const el = document.createElement('div');
         el.className = 'flex-shrink-0 flex items-center gap-2 bg-white/5 px-3 py-1 rounded-full border border-white/5 animate-fade-in';
         el.innerHTML = `<img src="img/${it.img}" class="w-6 h-6 object-contain"><span class="text-[10px] font-bold text-gray-300">${it.name.split(' ')[0]}</span>`;

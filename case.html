@@ -486,14 +486,31 @@ function createRow(index, winItem) {
     row.className = 'roulette-container animate-fade-in mb-4';
     row.innerHTML = `<div class="center-line"></div><div class="roulette-rail" id="rail-${index}"></div>`;
     container.appendChild(row);
+    
     const rail = document.getElementById(`rail-${index}`);
     const winIndex = 30; 
+    
+    // Получаем массив картинок, которые доступны ТОЛЬКО в текущем кейсе
+    const currentCaseLoot = activeCase.loot; 
+
     for (let i = 0; i < 45; i++) {
-        const keys = Object.keys(ITEMS);
-        const randomItem = ITEMS[keys[Math.floor(Math.random() * keys.length)]];
-        const displayItem = (i === winIndex) ? winItem : randomItem;
+        let displayItem;
+        
+        if (i === winIndex) {
+            // Центральный элемент — наш предопределенный выигрыш
+            displayItem = winItem;
+        } else {
+            // Выбираем случайную картинку из доступных в этом кейсе
+            const randomLootIndex = Math.floor(Math.random() * currentCaseLoot.length);
+            const randomImgName = currentCaseLoot[randomLootIndex][0];
+            
+            // Защита на случай, если в ITEMS нет такого ключа
+            displayItem = ITEMS[randomImgName] || winItem; 
+        }
+        
         rail.innerHTML += `<div class="roulette-item"><img src="img/${displayItem.img}"></div>`;
     }
+    
     setTimeout(() => {
         const itemWidth = 140;
         const offset = (winIndex * itemWidth) - (window.innerWidth / 2) + (itemWidth / 2);

@@ -8,11 +8,11 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --neon: #4ade80;
+            --neon: #facc15; /* Изменено на золотой */
             --bg-start: #050505;
-            --bg-end: #0a0a0a;
-            --card-bg: rgba(255, 255, 255, 0.03);
-            --border: rgba(255, 255, 255, 0.1);
+            --bg-end: #1a1605; /* Золотистый оттенок фона */
+            --card-bg: rgba(250, 204, 21, 0.03);
+            --border: rgba(250, 204, 21, 0.2);
             --trans: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -40,18 +40,18 @@
         .header-ui { padding: 40px 20px 10px; text-align: center; z-index: 10; }
         
         .balance-card {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(250, 204, 21, 0.05);
             backdrop-filter: blur(20px);
             border-radius: 25px; padding: 20px;
             border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center; gap: 15px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            box-shadow: 0 15px 35px rgba(250, 204, 21, 0.1);
             position: relative; overflow: hidden;
         }
 
         #balance-num {
             font-size: 38px; font-weight: 900; margin: 0;
-            background: linear-gradient(to bottom, #fff, #999);
+            background: linear-gradient(to bottom, #fff, #facc15);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             transition: transform 0.1s;
         }
@@ -61,7 +61,7 @@
         .energy-container { margin-top: 25px; padding: 0 30px; }
         .energy-bar-bg {
             width: 100%; height: 14px; background: rgba(255,255,255,0.1);
-            border-radius: 20px; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.05);
+            border-radius: 20px; overflow: hidden; border: 1.5px solid rgba(250, 204, 21, 0.1);
         }
         #energy-fill {
             height: 100%; width: 100%; background: linear-gradient(90deg, var(--neon), #fff);
@@ -70,19 +70,19 @@
         .energy-text { 
             font-size: 13px; font-weight: 800; margin-top: 10px; 
             display: flex; justify-content: center; align-items: center; gap: 6px; 
-            letter-spacing: 1px;
+            letter-spacing: 1px; color: var(--neon);
         }
 
         .game-core { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .hero-platform {
             width: 280px; height: 80px; background: var(--neon);
-            border-radius: 50%; filter: blur(60px); opacity: 0.15;
+            border-radius: 50%; filter: blur(60px); opacity: 0.2;
             position: absolute; bottom: 22%; transition: var(--trans);
         }
 
         #hero-img {
             width: 280px; z-index: 5; cursor: pointer;
-            filter: drop-shadow(0 0 30px rgba(0,0,0,0.8));
+            filter: drop-shadow(0 0 30px rgba(250, 204, 21, 0.3));
             transition: transform 0.05s ease-out;
             will-change: transform;
             -webkit-user-drag: none;
@@ -91,7 +91,7 @@
 
         .drawer-wardrobe {
             position: absolute; bottom: 90px; left: 0; width: 100%; height: 75%;
-            background: rgba(5, 5, 5, 0.98); backdrop-filter: blur(40px);
+            background: rgba(10, 10, 5, 0.98); backdrop-filter: blur(40px);
             border-radius: 40px 40px 0 0; z-index: 100;
             transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
             padding: 25px; box-sizing: border-box;
@@ -105,10 +105,10 @@
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 25px;
         }
-        .drawer-header h3 { margin: 0; font-weight: 900; letter-spacing: 1px; font-size: 20px; }
+        .drawer-header h3 { margin: 0; font-weight: 900; letter-spacing: 1px; font-size: 20px; color: var(--neon); }
         .close-btn { 
             cursor: pointer; color: var(--neon); font-weight: 900; 
-            padding: 5px 15px; border-radius: 10px; background: rgba(255,255,255,0.05);
+            padding: 5px 15px; border-radius: 10px; background: rgba(250, 204, 21, 0.1);
         }
 
         .scroll-area {
@@ -119,12 +119,12 @@
         .scroll-area::-webkit-scrollbar { display: none; }
 
         .card-item {
-            background: rgba(255,255,255,0.03); border-radius: 24px;
-            padding: 20px 15px; text-align: center; border: 1px solid rgba(255,255,255,0.05);
+            background: rgba(250, 204, 21, 0.03); border-radius: 24px;
+            padding: 20px 15px; text-align: center; border: 1px solid var(--border);
             position: relative; transition: var(--trans); display: flex; flex-direction: column;
             justify-content: space-between; min-height: 180px;
         }
-        .card-item.active-item { border-color: var(--neon); background: rgba(74,222,128,0.05); }
+        .card-item.active-item { border-color: var(--neon); background: rgba(250, 204, 21, 0.05); }
 
         .lvl-badge {
             position: absolute; top: 12px; right: 12px;
@@ -142,7 +142,7 @@
             font-weight: 900; font-size: 11px; cursor: pointer; text-transform: uppercase;
             transition: var(--trans);
         }
-        .btn-buy { background: var(--neon); color: black; box-shadow: 0 4px 15px rgba(74,222,128,0.3); }
+        .btn-buy { background: var(--neon); color: black; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3); }
         .btn-buy:disabled { background: #222; color: #555; box-shadow: none; cursor: not-allowed; }
         .btn-owned { background: #1a1a1a; color: white; border: 1px solid var(--border); }
 
@@ -159,10 +159,9 @@
 
         .click-pop {
             position: absolute; pointer-events: none; z-index: 9999;
-            font-weight: 900; font-size: 32px; color: #fff;
-            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+            font-weight: 900; font-size: 32px; color: var(--neon);
+            text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
             animation: float-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-            will-change: transform, opacity;
         }
 
         @keyframes float-up {
@@ -191,25 +190,24 @@
         .info-highlight { color: var(--neon); font-weight: 700; }
         
         .btn-telegram {
-            background: #0088cc; color: white; padding: 18px; border-radius: 18px;
+            background: var(--neon); color: black; padding: 18px; border-radius: 18px;
             width: 90%; max-width: 300px; font-weight: 900; border: none; cursor: pointer;
             text-transform: uppercase; display: block; text-decoration: none;
             margin: 20px auto 0;
-            box-shadow: 0 10px 20px rgba(0, 136, 204, 0.3);
+            box-shadow: 0 10px 20px rgba(250, 204, 21, 0.3);
         }
 
-        /* Leaderboard Specific Styles */
         .lb-promo {
             text-align: center; padding: 15px; 
-            background: linear-gradient(135deg, rgba(74,222,128,0.1) 0%, rgba(250,204,21,0.1) 100%); 
-            border-radius: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);
+            background: linear-gradient(135deg, rgba(250,204,21,0.1) 0%, rgba(250,204,21,0.1) 100%); 
+            border-radius: 20px; margin-bottom: 20px; border: 1px solid rgba(250, 204, 21, 0.1);
         }
         .lb-row {
             display: flex; align-items: center; gap: 15px; padding: 12px 18px;
             background: rgba(255,255,255,0.03); border-radius: 18px; margin-bottom: 8px;
             border: 1px solid transparent; transition: var(--trans);
         }
-        .lb-row.me { border-color: var(--neon); background: rgba(74,222,128,0.05); }
+        .lb-row.me { border-color: var(--neon); background: rgba(250,204,21,0.05); }
         .lb-rank { font-weight: 900; color: var(--neon); width: 25px; font-size: 16px; }
         .lb-name { flex: 1; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .lb-points { font-weight: 800; font-size: 12px; color: #fff; opacity: 0.7; }

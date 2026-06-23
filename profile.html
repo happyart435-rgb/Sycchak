@@ -124,21 +124,20 @@
         </section>
 
 <section class="glass-card p-6 mb-6 border-yellow-400/10">
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex justify-between items-center mb-4">
         <div>
-            <h3 class="orbitron text-[10px] font-black uppercase text-yellow-400 tracking-widest">Реферальная система</h3>
-            <p class="text-[9px] text-gray-400 uppercase mt-1">Приглашено: <span id="ref-count" class="text-white font-bold">0</span> друзей</p>
+            <h3 class="orbitron text-[10px] font-black uppercase text-yellow-400 tracking-widest">Рефералы</h3>
+            <p class="text-[9px] text-gray-400 mt-1">Приглашено: <span id="ref-count" class="text-white font-bold">0</span> друзей</p>
         </div>
-        
-        <!-- Индикатор разработки -->
-        <div class="flex items-center gap-2 bg-yellow-500/5 px-3 py-1.5 rounded-full border border-yellow-500/10">
-            <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
-            </span>
-            <span class="text-[8px] font-black uppercase text-yellow-500/80 tracking-widest">В разработке</span>
+        <div class="text-right">
+            <p class="text-[10px] text-yellow-500 font-bold">+5 ТИКЕТОВ ЗА ДРУГА</p>
         </div>
     </div>
+
+    <button onclick="copyRefLink()" class="w-full bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-[10px] text-yellow-500 font-bold uppercase tracking-widest hover:bg-yellow-500/20 transition-all">
+        Скопировать ссылку
+    </button>
+</section>
 
     <!-- Заглушка вместо активной ссылки -->
     <div class="relative w-full bg-black/20 border border-white/5 rounded-xl p-4 text-center">
@@ -316,6 +315,27 @@ async function loadUser() {
         }
     } catch (e) { 
         console.error("Критическая ошибка:", e); 
+    }
+}
+
+    function copyRefLink() {
+    const link = `https://t.me/NowearSpin_bot?start=${userId}`;
+    navigator.clipboard.writeText(link);
+    tg.showAlert("✅ Ссылка скопирована! Приглашай друзей.");
+}
+
+// Добавь это в функцию loadUser() при инициализации
+async function checkReferral() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refId = urlParams.get('start'); // Код из ссылки: ?start=12345
+
+    if (refId && refId !== String(userId)) {
+        // Отправляем запрос на сервер, чтобы начислить бонусы
+        await fetch('/api/process_referral', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ referrerId: refId, invitedId: userId })
+        });
     }
 }
 

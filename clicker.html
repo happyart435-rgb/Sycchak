@@ -2,83 +2,163 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clicker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StarDrop Nova - Deluxe Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #000; color: #fff; text-align: center; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        #coin { width: 200px; cursor: pointer; transition: 0.1s; user-select: none; }
-        #coin:active { transform: scale(0.9); }
-        .stats { font-size: 24px; margin-bottom: 20px; }
+        :root { --neon: #4ade80; --bg-start: #050505; --bg-end: #0a0a0a; --card-bg: rgba(255, 255, 255, 0.03); --border: rgba(255, 255, 255, 0.1); --trans: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Montserrat', sans-serif; background-color: var(--bg-start); color: white; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
+        #main-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; background: radial-gradient(circle at 50% 50%, var(--bg-end) 0%, var(--bg-start) 100%); transition: var(--trans); }
+        .app-shell { display: flex; flex-direction: column; height: 100vh; max-width: 430px; margin: 0 auto; position: relative; }
+        .header-ui { padding: 40px 20px 10px; text-align: center; z-index: 10; }
+        .balance-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); border-radius: 25px; padding: 20px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        #balance-num { font-size: 38px; font-weight: 900; margin: 0; background: linear-gradient(to bottom, #fff, #999); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .main-coin { width: 45px; height: 45px; object-fit: contain; }
+        .energy-container { margin-top: 25px; padding: 0 30px; }
+        .energy-bar-bg { width: 100%; height: 14px; background: rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.05); }
+        #energy-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--neon), #fff); box-shadow: 0 0 15px var(--neon); transition: width 0.3s ease-out; }
+        .energy-text { font-size: 13px; font-weight: 800; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 6px; letter-spacing: 1px; }
+        .game-core { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .hero-platform { width: 280px; height: 80px; background: var(--neon); border-radius: 50%; filter: blur(60px); opacity: 0.15; position: absolute; bottom: 22%; transition: var(--trans); }
+        #hero-img { width: 280px; z-index: 5; cursor: pointer; filter: drop-shadow(0 0 30px rgba(0,0,0,0.8)); transition: transform 0.05s ease-out; will-change: transform; -webkit-user-drag: none; }
+        .tap-anim { transform: scale(0.92) rotate(1deg) !important; }
+        .drawer-wardrobe { position: absolute; bottom: 90px; left: 0; width: 100%; height: 75%; background: rgba(5, 5, 5, 0.98); backdrop-filter: blur(40px); border-radius: 40px 40px 0 0; z-index: 100; transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1); padding: 25px; box-sizing: border-box; border-top: 2px solid var(--neon); transform: translateY(120%); display: flex; flex-direction: column; }
+        .drawer-wardrobe.active { transform: translateY(0); }
+        .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .drawer-header h3 { margin: 0; font-weight: 900; letter-spacing: 1px; font-size: 20px; }
+        .close-btn { cursor: pointer; color: var(--neon); font-weight: 900; padding: 5px 15px; border-radius: 10px; background: rgba(255,255,255,0.05); }
+        .scroll-area { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex: 1; overflow-y: auto; padding-bottom: 30px; scrollbar-width: none; }
+        .scroll-area::-webkit-scrollbar { display: none; }
+        .card-item { background: rgba(255,255,255,0.03); border-radius: 24px; padding: 20px 15px; text-align: center; border: 1px solid rgba(255,255,255,0.05); position: relative; transition: var(--trans); display: flex; flex-direction: column; justify-content: space-between; min-height: 180px; }
+        .card-item.active-item { border-color: var(--neon); background: rgba(74,222,128,0.05); }
+        .lvl-badge { position: absolute; top: 12px; right: 12px; background: var(--neon); color: black; font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 6px; }
+        .card-icon { font-size: 40px; margin-bottom: 10px; display: block; }
+        .card-img { width: 80px; height: 80px; border-radius: 18px; object-fit: cover; margin: 0 auto 10px; }
+        .card-title { font-size: 13px; font-weight: 800; margin-bottom: 5px; opacity: 0.9; }
+        .card-desc { font-size: 10px; color: var(--neon); font-weight: 700; margin-bottom: 15px; }
+        .btn-action { width: 100%; padding: 12px 5px; border-radius: 14px; border: none; font-weight: 900; font-size: 11px; cursor: pointer; text-transform: uppercase; transition: var(--trans); }
+        .btn-buy { background: var(--neon); color: black; box-shadow: 0 4px 15px rgba(74,222,128,0.3); }
+        .btn-buy:disabled { background: #222; color: #555; cursor: not-allowed; }
+        .btn-owned { background: #1a1a1a; color: white; border: 1px solid var(--border); }
+        .nav-bar { position: fixed; bottom: 0; width: 100%; max-width: 430px; height: 90px; background: rgba(0,0,0,0.95); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--border); z-index: 110; padding-bottom: 15px; backdrop-filter: blur(10px); }
+        .nav-item { color: #555; font-size: 10px; font-weight: 800; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; transition: var(--trans); }
+        .nav-item.active { color: var(--neon); transform: translateY(-5px); }
+        .nav-item svg { width: 22px; height: 22px; }
+        .click-pop { position: absolute; pointer-events: none; z-index: 9999; font-weight: 900; font-size: 32px; color: #fff; text-shadow: 0 0 10px rgba(0,0,0,0.5); animation: float-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes float-up { 0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; } 20% { opacity: 1; transform: translate(-50%, -20px) scale(1.2); } 100% { transform: translate(-50%, -120px) scale(1); opacity: 0; } }
+        .top-nav { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 200; position: relative; }
+        .btn-back, .btn-info-star { display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); padding: 10px 16px; border-radius: 15px; color: white; font-size: 11px; font-weight: 800; cursor: pointer; }
+        .btn-info-star { border-color: #facc15; color: #facc15; }
+        .info-content { text-align: center; padding: 20px 20px 80px; overflow-y: auto; }
+        .info-star-img { width: 120px; margin: 0 auto 20px; display: block; filter: drop-shadow(0 0 15px rgba(250, 204, 21, 0.4)); }
+        .info-title { font-size: 24px; font-weight: 900; margin-bottom: 15px; }
+        .info-text { font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.7); margin-bottom: 25px; }
+        .info-highlight { color: var(--neon); font-weight: 700; }
+        .btn-telegram { background: #0088cc; color: white; padding: 18px; border-radius: 18px; width: 90%; max-width: 300px; font-weight: 900; border: none; cursor: pointer; text-transform: uppercase; display: block; text-decoration: none; margin: 20px auto 0; }
+        .lb-promo { text-align: center; padding: 15px; background: linear-gradient(135deg, rgba(74,222,128,0.1) 0%, rgba(250,204,21,0.1) 100%); border-radius: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); }
+        .lb-row { display: flex; align-items: center; gap: 15px; padding: 12px 18px; background: rgba(255,255,255,0.03); border-radius: 18px; margin-bottom: 8px; border: 1px solid transparent; }
+        .lb-row.me { border-color: var(--neon); background: rgba(74,222,128,0.05); }
+        .lb-rank { font-weight: 900; color: var(--neon); width: 25px; font-size: 16px; }
+        .lb-name { flex: 1; font-weight: 700; font-size: 14px; }
+        .lb-points { font-weight: 800; font-size: 12px; opacity: 0.7; }
     </style>
 </head>
 <body>
 
-    <div class="stats">Монет: <span id="balance">0</span></div>
-    <img id="coin" src="https://cdn-icons-png.flaticon.com/512/1205/1205194.png" alt="coin">
-    <div id="energy">Энергия: 1000/1000</div>
+<div id="main-bg"></div>
+
+<div class="app-shell">
+    <div class="top-nav">
+        <div onclick="safeGoBack()" class="btn-back">НАЗАД</div>
+        <button class="btn-info-star" onclick="openPanel('info-panel', this)">STAR?</button>
+    </div>
+
+    <div class="header-ui">
+        <div class="balance-card">
+            <h1 id="balance-num">0</h1>
+        </div>
+        <div class="energy-container">
+            <div class="energy-bar-bg"><div id="energy-fill"></div></div>
+            <div class="energy-text">⚡ <span id="energy-val">1000</span> / <span id="max-energy-val">1000</span></div>
+        </div>
+    </div>
+
+    <div class="game-core" id="tap-zone">
+        <div class="hero-platform"></div>
+        <img id="hero-img" src="https://cdn-icons-png.flaticon.com/512/1144/1144760.png">
+    </div>
+
+    <div class="drawer-wardrobe" id="info-panel">
+        <div class="drawer-header"><h3>INFO</h3><div class="close-btn" onclick="closeAllPanels()">X</div></div>
+        <div class="info-content">
+            <div class="info-title">Как получить Stars?</div>
+            <p class="info-text">Конвертация каждые 30 дней при балансе > 100 млрд.</p>
+        </div>
+    </div>
+    <div class="drawer-wardrobe" id="market-panel"><div class="drawer-header"><h3>МАРКЕТ</h3><div class="close-btn" onclick="closeAllPanels()">X</div></div><div class="scroll-area" id="market-list"></div></div>
+    <div class="drawer-wardrobe" id="leaderboard-panel"><div class="drawer-header"><h3>ТОП</h3><div class="close-btn" onclick="closeAllPanels()">X</div></div><div class="scroll-area" id="leaderboard-list"></div></div>
+    <div class="drawer-wardrobe" id="wardrobe-panel"><div class="drawer-header"><h3>ГЕРОИ</h3><div class="close-btn" onclick="closeAllPanels()">X</div></div><div class="scroll-area" id="skin-list"></div></div>
+
+    <div class="nav-bar">
+        <div class="nav-item" onclick="openPanel('market-panel', this)">МАРКЕТ</div>
+        <div class="nav-item active" id="nav-main" onclick="closeAllPanels()">ГЛАВНАЯ</div>
+        <div class="nav-item" onclick="openPanel('leaderboard-panel', this)">ТОП</div>
+        <div class="nav-item" onclick="openPanel('wardrobe-panel', this)">ГЕРОИ</div>
+    </div>
+</div>
 
 <script>
-    // 1. НАСТРОЙКИ
-    const SUPABASE_URL = 'https://ypvvoqbvzfmirprevazq.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzM3NTgsImV4cCI6MjA5NzQ0OTc1OH0.bt4iVMEX0JtYzJxW7gtRxWEOz0eXPIOautw7_FALhkc';
-    
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const tg = window.Telegram.WebApp;
-    const userId = tg.initDataUnsafe?.user?.id || 12345; // Для теста в браузере
+    tg.expand();
+    const supabase = window.supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzM3NTgsImV4cCI6MjA5NzQ0OTc1OH0.bt4iVMEX0JtYzJxW7gtRxWEOz0eXPIOautw7_FALhkc');
+    
+    // --- ДАННЫЕ ---
+    let state = { points: 0, energy: 1000, maxEnergy: 1000, ownedHeroes: [0], activeHeroId: 0, clickPower: 1, marketLevels: {} };
+    const heroes = [{ id: 0, name: 'Default', img: 'https://cdn-icons-png.flaticon.com/512/1144/1144760.png', x: 1, color: '#4ade80', bg: '#0a1a0a', price: 0 }];
+    const marketData = [{ id: 1, name: 'Click Power', type: 'click', basePrice: 100, baseAdd: 1, icon: '⚡' }];
 
-    let state = { points: 0, energy: 1000 };
-
-    // 2. ЗАГРУЗКА ИЗ БД
-    async function loadData() {
-        const { data } = await supabase.from('players').select('*').eq('user_id', userId).single();
-        if (data) {
-            state = data;
-        } else {
-            // Если юзера нет, создаем
-            await supabase.from('players').insert([{ user_id: userId, points: 0, energy: 1000 }]);
-        }
-        updateUI();
+    // --- ЛОГИКА ---
+    async function loadFromDB() {
+        const userId = tg.initDataUnsafe?.user?.id || 123;
+        let { data } = await supabase.from('players').select('*').eq('user_id', userId).single();
+        if (data) { state = { ...state, ...data }; updateUI(); }
     }
 
-    // 3. ОБНОВЛЕНИЕ ЭКРАНА
-    function updateUI() {
-        document.getElementById('balance').innerText = Math.floor(state.points);
-        document.getElementById('energy').innerText = `Энергия: ${state.energy}/1000`;
-    }
-
-    // 4. КЛИК
-    document.getElementById('coin').onclick = async () => {
-        if (state.energy > 0) {
-            state.points += 1;
-            state.energy -= 1;
-            updateUI();
-            
-            // Сохраняем в базу (с задержкой, чтобы не вешать сервер)
-            clearTimeout(window.saveTimer);
-            window.saveTimer = setTimeout(saveToDB, 1000);
-        }
-    };
-
-    // 5. СОХРАНЕНИЕ В БД
     async function saveToDB() {
-        await supabase.from('players').upsert({
-            user_id: userId,
-            points: state.points,
-            energy: state.energy
-        });
+        const userId = tg.initDataUnsafe?.user?.id || 123;
+        await supabase.from('players').upsert({ user_id: userId, ...state });
     }
 
-    // 6. ВОССТАНОВЛЕНИЕ ЭНЕРГИИ
-    setInterval(() => {
-        if (state.energy < 1000) {
-            state.energy += 1;
-            updateUI();
-        }
-    }, 1000);
+    async function fetchLeaderboard() {
+        let { data } = await supabase.from('players').select('user_id, points').order('points', { ascending: false }).limit(10);
+        document.getElementById('leaderboard-list').innerHTML = data?.map((p, i) => `<div class="lb-row"><div class="lb-rank">#${i+1}</div><div class="lb-name">${p.user_id}</div><div class="lb-points">${Math.floor(p.points)}</div></div>`).join('') || '';
+    }
 
-    loadData();
+    function handleTapLogic(x, y) {
+        if (state.energy < 1) return;
+        state.points += state.clickPower;
+        state.energy -= 1;
+        updateUI();
+        if (state.points % 50 === 0) saveToDB();
+    }
+
+    document.getElementById('tap-zone').addEventListener('touchstart', (e) => {
+        handleTapLogic();
+    });
+
+    function updateUI() {
+        document.getElementById('balance-num').innerText = Math.floor(state.points).toLocaleString();
+        document.getElementById('energy-val').innerText = Math.floor(state.energy);
+        document.getElementById('energy-fill').style.width = (state.energy / state.maxEnergy * 100) + '%';
+    }
+
+    function openPanel(id) { document.querySelectorAll('.drawer-wardrobe').forEach(d => d.classList.remove('active')); document.getElementById(id).classList.add('active'); if(id==='leaderboard-panel') fetchLeaderboard(); }
+    function closeAllPanels() { document.querySelectorAll('.drawer-wardrobe').forEach(d => d.classList.remove('active')); }
+    function safeGoBack() { saveToDB(); window.location.reload(); }
+
+    window.onload = loadFromDB;
 </script>
 </body>
 </html>

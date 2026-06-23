@@ -127,12 +127,13 @@
             <button onclick="launch('plinko.html')" class="btn-play">Играть</button>
         </section>
 
-        <section class="game-card">
-            <div class="image-container">
-                <img src="catcher.jpeg" class="game-img">
-            </div>
-            <button onclick="launch('Lovlyagift.html')" class="btn-play">Играть</button>
-        </section>
+<section class="game-card">
+    <div class="image-container">
+        <img src="catcher.jpeg" class="game-img" alt="Игра">
+    </div>
+    <!-- При клике вызовется функция launch, которая перенаправит браузер -->
+    <button onclick="launch('Lovlyagift.html')" class="btn-play">Играть</button>
+</section>
 
     </div>
 
@@ -159,6 +160,10 @@
                 alert("Ошибка сервера");
             }
         }
+
+    function launch(url) {
+        window.location.href = url;
+    }
 
         function launchDirect(file) {
             window.location.replace("./" + file);

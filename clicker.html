@@ -124,28 +124,11 @@ button:hover{
 
 <script>
 
-    async function loadPlayer() {
-
-    const { data, error } = await supabase
-        .from("players")
-        .select("*")
-        .eq("user_id", USER_ID)
-        .maybeSingle();
-
-    console.log("DATA:", data);
-    console.log("ERROR:", error);
-
-    if (error) {
-        alert(JSON.stringify(error));
-        return;
-    }
-
 const supabase = window.supabase.createClient(
     "https://ypvvoqbvzfmirprevazq.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzM3NTgsImV4cCI6MjA5NzQ0OTc1OH0.bt4iVMEX0JtYzJxW7gtRxWEOz0eXPIOautw7_FALhkc"
 );
 
-// Временно фиксированный пользователь
 const USER_ID = 123456789;
 
 let coins = 0;
@@ -157,15 +140,23 @@ let energy = 1000;
 
 async function loadPlayer() {
 
-    let { data } = await supabase
+    const { data, error } = await supabase
         .from("players")
         .select("*")
         .eq("user_id", USER_ID)
-        .single();
+        .maybeSingle();
+
+    console.log("DATA:", data);
+    console.log("ERROR:", error);
+
+    if (error) {
+        console.error(error);
+        return;
+    }
 
     if (!data) {
 
-        await supabase
+        const { error: insertError } = await supabase
             .from("players")
             .insert({
                 user_id: USER_ID,
@@ -178,22 +169,25 @@ async function loadPlayer() {
                 active_hero_id: 0
             });
 
-        data = {
-            points: 0,
-            energy: 1000,
-            per_click: 1,
-            power_cost: 50,
-            auto_income: 0,
-            auto_cost: 100
-        };
-    }
+        console.log("INSERT ERROR:", insertError);
 
-    coins = data.points || 0;
-    energy = data.energy || 1000;
-    perClick = data.per_click || 1;
-    powerCost = data.power_cost || 50;
-    autoIncome = data.auto_income || 0;
-    autoCost = data.auto_cost || 100;
+        coins = 0;
+        energy = 1000;
+        perClick = 1;
+        powerCost = 50;
+        autoIncome = 0;
+        autoCost = 100;
+
+    } else {
+
+        coins = data.points ?? 0;
+        energy = data.energy ?? 1000;
+        perClick = data.per_click ?? 1;
+        powerCost = data.power_cost ?? 50;
+        autoIncome = data.auto_income ?? 0;
+        autoCost = data.auto_cost ?? 100;
+
+    }
 
     updateUI();
 }
@@ -213,36 +207,23 @@ async function savePlayer() {
         })
         .eq("user_id", USER_ID);
 
-    if(error){
-        console.error(error);
+    if (error) {
+        console.error("SAVE ERROR:", error);
     }
 }
 
-function updateUI(){
+function updateUI() {
 
-    document.getElementById("coins").innerText =
-        Math.floor(coins);
-
-    document.getElementById("perClick").innerText =
-        perClick;
-
-    document.getElementById("powerCost").innerText =
-        powerCost;
-
-    document.getElementById("autoIncome").innerText =
-        autoIncome;
-
-    document.getElementById("autoCost").innerText =
-        autoCost;
+    document.getElementById("coins").innerText = Math.floor(coins);
+    document.getElementById("perClick").innerText = perClick;
+    document.getElementById("powerCost").innerText = powerCost;
+    document.getElementById("autoIncome").innerText = autoIncome;
+    document.getElementById("autoCost").innerText = autoCost;
 }
 
-document
-.getElementById("hamster")
-.addEventListener("click", ()=>{
+document.getElementById("hamster").addEventListener("click", () => {
 
-    if(energy <= 0){
-        return;
-    }
+    if (energy <= 0) return;
 
     coins += perClick;
     energy--;
@@ -250,9 +231,9 @@ document
     updateUI();
 });
 
-function buyPower(){
+function buyPower() {
 
-    if(coins < powerCost){
+    if (coins < powerCost) {
         alert("Недостаточно монет!");
         return;
     }
@@ -260,15 +241,14 @@ function buyPower(){
     coins -= powerCost;
     perClick++;
 
-    powerCost =
-        Math.floor(powerCost * 1.7);
+    powerCost = Math.floor(powerCost * 1.7);
 
     updateUI();
 }
 
-function buyAuto(){
+function buyAuto() {
 
-    if(coins < autoCost){
+    if (coins < autoCost) {
         alert("Недостаточно монет!");
         return;
     }
@@ -276,27 +256,21 @@ function buyAuto(){
     coins -= autoCost;
     autoIncome++;
 
-    autoCost =
-        Math.floor(autoCost * 1.8);
+    autoCost = Math.floor(autoCost * 1.8);
 
     updateUI();
 }
 
-setInterval(()=>{
+setInterval(() => {
 
     coins += autoIncome;
-
     updateUI();
 
-},1000);
+}, 1000);
 
-setInterval(async ()=>{
+setInterval(savePlayer, 5000);
 
-    await savePlayer();
-
-},5000);
-
-window.onload = loadPlayer;
+window.addEventListener("load", loadPlayer);
 
 </script>
 

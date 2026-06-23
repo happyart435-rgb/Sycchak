@@ -73,40 +73,21 @@
             letter-spacing: 1px; color: var(--neon);
         }
 
-        .game-core {
-            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
-            cursor: pointer;
-        }
-
-        /* Платформа теперь привязана к изображению и всегда ровно под ним */
+        .game-core { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         .hero-platform {
             width: 280px; height: 80px; background: var(--neon);
             border-radius: 50%; filter: blur(60px); opacity: 0.2;
-            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); transition: var(--trans);
-            z-index: 4;
+            position: absolute; bottom: 22%; transition: var(--trans);
         }
 
-        /* Центрирование и выравнивание изображения */
         #hero-img {
-            width: 280px; 
-            z-index: 5;
+            width: 280px; z-index: 5; cursor: pointer;
             filter: drop-shadow(0 0 30px rgba(250, 204, 21, 0.3));
             transition: transform 0.05s ease-out;
             will-change: transform;
             -webkit-user-drag: none;
-            
-            /* Выравнивание строго по центру */
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%); /* Центрирование */
-            margin-top: -30px; /* Небольшое смещение вверх, чтобы платформа была под ногами */
         }
-
-        /* Измененная анимация тапа: только сжатие, без поворота */
-        .tap-anim {
-            transform: translate(-50%, -50%) scale(0.92) !important;
-        }
+        .tap-anim { transform: scale(0.92) rotate(1deg) !important; }
 
         .drawer-wardrobe {
             position: absolute; bottom: 90px; left: 0; width: 100%; height: 75%;
@@ -176,23 +157,17 @@
         .nav-item.active { color: var(--neon); transform: translateY(-5px); }
         .nav-item svg { width: 22px; height: 22px; }
 
-        /* Всплывающий текст клика теперь привязан к центру лягушки */
         .click-pop {
             position: absolute; pointer-events: none; z-index: 9999;
             font-weight: 900; font-size: 32px; color: var(--neon);
             text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
             animation: float-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-            
-            /* Выравнивание из центра */
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
         }
 
         @keyframes float-up {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            20% { opacity: 1; transform: translate(-50%, -70px) scale(1.2); }
-            100% { transform: translate(-50%, -170px) scale(1); opacity: 0; }
+            0% { transform: translate(-50%, 0) scale(0.5); opacity: 0; }
+            20% { opacity: 1; transform: translate(-50%, -20px) scale(1.2); }
+            100% { transform: translate(-50%, -120px) scale(1); opacity: 0; }
         }
 
         .top-nav { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 200; position: relative; }
@@ -269,16 +244,17 @@
             <img src="img/Nova Token.png" class="main-coin" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1205/1205194.png'">
             <h1 id="balance-num">0</h1>
         </div>
+        <button onclick="exchangeTokensToStars()" class="mt-4 w-full max-w-[200px] mx-auto py-3 bg-yellow-400 text-black font-black text-[10px] rounded-2xl uppercase shadow-lg shadow-yellow-400/20 active:scale-95 transition-all">
+            Обменять 1млрд → 1⭐
+        </button>
         <div class="energy-container">
             <div class="energy-bar-bg"><div id="energy-fill"></div></div>
             <div class="energy-text">⚡ <span id="energy-val">1000</span> / <span id="max-energy-val">1000</span></div>
         </div>
     </div>
 
-    <!-- Область клика -->
     <div class="game-core" id="tap-zone">
         <div class="hero-platform"></div>
-        <!-- Изображение теперь позиционируется абсолютно внутри game-core -->
         <img src="pepe1.png" id="hero-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
     </div>
 
@@ -292,7 +268,7 @@
                 Если ваш баланс превышает <span class="info-highlight">100 млрд Nova Token</span>, они автоматически конвертируются in <span class="info-highlight">Stars / Ton</span>. <br><br>
                 Актуальный курс обмена всегда доступен в нашем официальном канале.
             </p>
-            <a href="https://t.me/nowear_FREE" target="_blank" class="btn-telegram">ПЕРЕЙТИ В КАНАЛ</a>
+            <a href="https://t.me/StarDrop_channel" target="_blank" class="btn-telegram">ПЕРЕЙТИ В КАНАЛ</a>
         </div>
     </div>
 
@@ -345,14 +321,14 @@
     let prestigeMultiplier = 1;
 
     const heroes = [
-        { id: 0, x: 1, price: 0, img: "pepe1.png", color: "#facc15", bg: "#1a1605" },
-        { id: 1, x: 3, price: 750000, img: "pepe2.png", color: "#facc15", bg: "#2a250f" },
-        { id: 2, x: 8, price: 2500000, img: "pepe3.png", color: "#a855f7", bg: "#251635" },
-        { id: 3, x: 15, price: 8000000, img: "pepe4.png", color: "#3b82f6", bg: "#162235" },
-        { id: 4, x: 30, price: 30000000, img: "pepe5.png", color: "#eab308", bg: "#352e16" },
-        { id: 5, x: 60, price: 150000000, img: "pepe6.png", color: "#ef4444", bg: "#351616" },
-        { id: 6, x: 120, price: 800000000, img: "Hero.png", color: "#60a5fa", bg: "#162235" }
-    ];
+    { id: 0, x: 1, price: 0, img: "img/Новая папка (3)/pepe1.png", color: "#facc15", bg: "#1a1605" },
+    { id: 1, x: 3, price: 750000, img: "img/Новая папка (3)/pepe2.png", color: "#facc15", bg: "#2a250f" },
+    { id: 2, x: 8, price: 2500000, img: "img/Новая папка (3)/pepe3.png", color: "#a855f7", bg: "#251635" },
+    { id: 3, x: 15, price: 8000000, img: "img/Новая папка (3)/pepe4.png", color: "#3b82f6", bg: "#162235" },
+    { id: 4, x: 30, price: 30000000, img: "img/Новая папка (3)/pepe5.png", color: "#eab308", bg: "#352e16" },
+    { id: 5, x: 60, price: 150000000, img: "img/Новая папка (3)/pepe6.png", color: "#ef4444", bg: "#351616" },
+    { id: 6, x: 120, price: 800000000, img: "img/hero.png", color: "#60a5fa", bg: "#162235" }
+];
 
     const marketData = [
         { id: 0, name: "Энергетик", baseAdd: 5, basePrice: 150, icon: "⚡️", type: "click" },
@@ -427,6 +403,22 @@
         } catch (e) { list.innerHTML = '<div style="text-align:center; padding:30px; color:red;">Ошибка загрузки топа</div>'; }
     }
 
+    async function exchangeTokensToStars() {
+        const rate = 1000000000;
+        if (state.points < rate) {
+            tg.showAlert('Нужен минимум 1 миллиард Nova!');
+            return;
+        }
+        
+        const starsToGet = Math.floor(state.points / rate);
+        state.points -= starsToGet * rate;
+        
+        updateUI();
+        save();
+        
+        tg.showAlert(`Успешно! Вы получили ${starsToGet} звезд(ы).`);
+    }
+
     async function init() {
         const saved = localStorage.getItem('nova_engine_save');
         if (saved) {
@@ -453,8 +445,7 @@
     const tapZone = document.getElementById('tap-zone');
     const heroImg = document.getElementById('hero-img');
 
-    // Логика клика: координаты X, Y больше не используются для позиционирования попапа
-    function handleTapLogic() {
+    function handleTapLogic(x, y) {
         if (state.energy < 1) return;
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
@@ -468,8 +459,7 @@
         state.energy -= 1;
         state.lastUnix = Date.now();
         
-        // Попап появляется из центра лягушки
-        showPop(profit);
+        showPop(x, y, profit);
         updateUI();
         
         if(state.points % 100 === 0) save();
@@ -477,22 +467,17 @@
 
     tapZone.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        // Поддержка мультитача, но координаты тапа игнорируются для попапа
         for (let i = 0; i < e.changedTouches.length; i++) {
-            handleTapLogic();
+            handleTapLogic(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
         }
     });
 
-    // Функция showPop теперь принимает только значение, координаты X, Y не нужны
-    function showPop(val) {
+    function showPop(x, y, val) {
         const p = document.createElement('div');
         p.className = 'click-pop';
         p.innerHTML = `+${Math.floor(val).toLocaleString()}`;
-        
-        // Попап добавляется внутрь tap-zone, чтобы позиционирование top/left 50% работало правильно
-        tapZone.appendChild(p);
-        
-        // Удаляем попап после завершения анимации
+        p.style.left = x + 'px'; p.style.top = y + 'px';
+        document.body.appendChild(p);
         setTimeout(() => p.remove(), 800);
     }
 

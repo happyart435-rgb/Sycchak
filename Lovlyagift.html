@@ -229,15 +229,37 @@
         setTimeout(spawnItem, spawnRate);
     }
 
-    function endGame(reason) {
-        if (!gameActive) return;
-        gameActive = false;
-        
-        const modal = document.getElementById('fail-modal');
-        document.getElementById('fail-title').innerText = reason === 'bomb' ? "БАБАХ!" : "ВЫ ПРОПУСТИЛИ ПОДАРОК!";
-        document.getElementById('final-res').innerText = "ВЫ НИЧЕГО НЕ ЗАРАБОТАЛИ";
-        modal.style.display = 'flex';
+function endGame(reason) {
+    if (!gameActive) return;
+    gameActive = false;
+    
+    const modal = document.getElementById('fail-modal');
+    const title = document.getElementById('fail-title');
+    const msg = document.getElementById('fail-msg');
+    const resText = document.getElementById('final-res');
+    const icon = document.getElementById('fail-icon');
+    
+    // Настраиваем модалку в зависимости от причины
+    if (reason === 'bomb') {
+        icon.src = "bomb.png";
+        title.innerText = "БАБАХ!";
+        msg.innerText = "Вы подорвались на мине!";
+        resText.innerText = "ВЫ НИЧЕГО НЕ ЗАРАБОТАЛИ";
+    } else if (reason === 'miss') {
+        icon.src = "star.png"; // Можно сменить на иконку подарка
+        title.innerText = "УВЫ...";
+        msg.innerText = "Вы пропустили подарок!";
+        resText.innerText = "ВЫ НИЧЕГО НЕ ЗАРАБОТАЛИ";
+    } else {
+        // Случай, когда нажали "ЗАВЕРШИТЬ"
+        icon.src = "star.png"; 
+        title.innerText = "ИГРА ЗАВЕРШЕНА";
+        msg.innerText = "Хороший результат!";
+        resText.innerText = `ВЫ ЗАРАБОТАЛИ: ${starsEarned} ⭐`;
     }
+    
+    modal.style.display = 'flex';
+}
 
     initStars();
     spawnItem();

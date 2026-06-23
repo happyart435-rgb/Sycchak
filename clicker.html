@@ -124,6 +124,22 @@ button:hover{
 
 <script>
 
+    async function loadPlayer() {
+
+    const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .eq("user_id", USER_ID)
+        .maybeSingle();
+
+    console.log("DATA:", data);
+    console.log("ERROR:", error);
+
+    if (error) {
+        alert(JSON.stringify(error));
+        return;
+    }
+
 const supabase = window.supabase.createClient(
     "https://ypvvoqbvzfmirprevazq.supabase.co",
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzM3NTgsImV4cCI6MjA5NzQ0OTc1OH0.bt4iVMEX0JtYzJxW7gtRxWEOz0eXPIOautw7_FALhkc"

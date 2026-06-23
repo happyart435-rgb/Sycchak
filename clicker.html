@@ -212,7 +212,6 @@
         .lb-name { flex: 1; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .lb-points { font-weight: 800; font-size: 12px; color: #fff; opacity: 0.7; }
 
-        /* Стили для заблокированных предметов */
         .card-item.locked {
             filter: grayscale(1) brightness(0.4);
             pointer-events: none;
@@ -239,20 +238,16 @@
         </button>
     </div>
 
-    <div class="header-ui">
+   <div class="header-ui">
         <div class="balance-card">
             <img src="img/Nova Token.png" class="main-coin" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1205/1205194.png'">
             <h1 id="balance-num">0</h1>
         </div>
-        <button onclick="exchangeTokensToStars()" class="mt-4 w-full max-w-[200px] mx-auto py-3 bg-yellow-400 text-black font-black text-[10px] rounded-2xl uppercase shadow-lg shadow-yellow-400/20 active:scale-95 transition-all">
-            Обменять 1млрд → 1⭐
-        </button>
         <div class="energy-container">
             <div class="energy-bar-bg"><div id="energy-fill"></div></div>
             <div class="energy-text">⚡ <span id="energy-val">1000</span> / <span id="max-energy-val">1000</span></div>
         </div>
     </div>
-
     <div class="game-core" id="tap-zone">
         <div class="hero-platform"></div>
         <img src="pepe1.png" id="hero-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
@@ -264,11 +259,11 @@
             <img src="img/star.png" class="info-star-img" alt="Star">
             <div class="info-title">Как получить Stars?</div>
             <p class="info-text">
-                В конце каждого месяца происходит глобальный обмен! <br><br>
+                В конце каждого сезона происходит глобальный обмен! <br><br>
                 Если ваш баланс превышает <span class="info-highlight">100 млрд Nova Token</span>, они автоматически конвертируются in <span class="info-highlight">Stars / Ton</span>. <br><br>
                 Актуальный курс обмена всегда доступен в нашем официальном канале.
             </p>
-            <a href="https://t.me/StarDrop_channel" target="_blank" class="btn-telegram">ПЕРЕЙТИ В КАНАЛ</a>
+            <a href="https://t.me/nowear_FREE" target="_blank" class="btn-telegram">ПЕРЕЙТИ В КАНАЛ</a>
         </div>
     </div>
 
@@ -317,8 +312,6 @@
     const tg = window.Telegram.WebApp;
     const BACKEND_URL = 'https://stars-drop.vercel.app/api';
     tg.expand();
-
-    let prestigeMultiplier = 1;
 
     const heroes = [
     { id: 0, x: 1, price: 0, img: "img/Новая папка (3)/pepe1.png", color: "#facc15", bg: "#1a1605" },
@@ -401,22 +394,6 @@
                 `;
             });
         } catch (e) { list.innerHTML = '<div style="text-align:center; padding:30px; color:red;">Ошибка загрузки топа</div>'; }
-    }
-
-    async function exchangeTokensToStars() {
-        const rate = 1000000000;
-        if (state.points < rate) {
-            tg.showAlert('Нужен минимум 1 миллиард Nova!');
-            return;
-        }
-        
-        const starsToGet = Math.floor(state.points / rate);
-        state.points -= starsToGet * rate;
-        
-        updateUI();
-        save();
-        
-        tg.showAlert(`Успешно! Вы получили ${starsToGet} звезд(ы).`);
     }
 
     async function init() {
@@ -520,7 +497,6 @@
         }
     }
 
-    // Из рендеринга убран лишний div с именем героя (card-title)
     function renderSkins() {
         const container = document.getElementById('skin-list');
         container.innerHTML = '';
@@ -597,17 +573,6 @@
     }
 
     window.onload = init;
-
-    function performPrestige() {
-        if (confirm("Сбросить прогресс и получить множитель x2?")) {
-            state.points = 0;
-            state.activeHeroId = 0;
-            prestigeMultiplier *= 2;
-            updateUI();
-            save();
-            alert("Престиж получен! Новый множитель: " + prestigeMultiplier);
-        }
-    }
 </script>
 </body>
 </html>

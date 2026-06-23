@@ -306,28 +306,12 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://sycchak.vercel.app/api';
     tg.expand();
 
-    const heroes = [
-        { id: 0, name: "Новичок", x: 1, price: 0, img: "hero.png", color: "#4ade80", bg: "#0f2a1a" },
-        { id: 1, name: "Путешественник", x: 5, price: 500000, img: "img/hero1.jpg", color: "#facc15", bg: "#2a250f" },
-        { id: 2, name: "Шаман", x: 10, price: 1000000, img: "img/hero2.jpg", color: "#a855f7", bg: "#251635" },
-        { id: 3, name: "Ниндзя", x: 20, price: 5000000, img: "img/hero3.jpg", color: "#3b82f6", bg: "#162235" },
-        { id: 4, name: "Король", x: 30, price: 15000000, img: "img/hero5.jpg", color: "#eab308", bg: "#352e16" },
-        { id: 5, name: "Пират", x: 45, price: 100000000, img: "img/hero6.jpg", color: "#ef4444", bg: "#351616" },
-        { id: 6, name: "Космонавт", x: 55, price: 10000000000, img: "img/hero7.jpg", color: "#60a5fa", bg: "#162235" }
-    ];
-
-    const marketData = [
-        { id: 0, name: "Энергетик", baseAdd: 5, basePrice: 150, icon: "⚡️", type: "click" },
-        { id: 1, name: "Перчатки", baseAdd: 15, basePrice: 1000, icon: "🧤", type: "click" },
-        { id: 2, name: "Золотой палец", baseAdd: 60, basePrice: 5000, icon: "☝️", type: "click" },
-        { id: 3, name: "Кликер-бот", baseAdd: 250, basePrice: 20000, icon: "🤖", type: "click" },
-        { id: 4, name: "Тяжелая гиря", baseAdd: 1000, basePrice: 100000, icon: "🏋️", type: "click" },
-        { id: 5, name: "Мега-Батарея", baseAdd: 500, basePrice: 50000, icon: "🔋", type: "energy" }
-    ];
-
+    // Настройки Supabase
+    const supabase = window.supabase.createClient('ВАШ_URL', 'ВАШ_ANON_KEY');
+    
+    // Начальное состояние
     let state = {
         points: 0,
         energy: 1000,
@@ -335,87 +319,59 @@
         ownedHeroes: [0],
         activeHeroId: 0,
         clickPower: 1,
-        marketLevels: {},
-        lastUnix: Date.now()
+        marketLevels: {} 
     };
 
-// Инициализация Supabase (возьми эти данные в проекте Supabase -> Project Settings -> API)
-const supabase = window.supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzM3NTgsImV4cCI6MjA5NzQ0OTc1OH0.bt4iVMEX0JtYzJxW7gtRxWEOz0eXPIOautw7_FALhkc');
+    async function loadFromDB() {
+        const userId = tg.initDataUnsafe?.user?.id;
+        if (!userId) return;
 
-async function loadFromDB() {
-    const userId = tg.initDataUnsafe?.user?.id;
-    if (!userId) return;
+        let { data, error } = await supabase
+            .from('players')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
 
-    const { data, error } = await supabase
-        .from('players')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-    if (data) {
-        state.points = parseInt(data.points);
-        state.energy = parseInt(data.energy);
-        state.activeHeroId = parseInt(data.active_hero_id);
-        // Если ты хранишь уровни рынка в базе, добавь их тоже:
-        // state.marketLevels = data.market_levels || {}; 
-        updateUI();
-        applyHeroVisuals();
+        if (data) {
+            state = { ...state, ...data };
+            updateUI();
+            applyHeroVisuals();
+        } else {
+            // Если игрока нет, создаем его
+            await supabase.from('players').insert([{ user_id: userId, points: 0, energy: 1000 }]);
+        }
     }
-}
 
-async function saveToDB() {
-    const userId = tg.initDataUnsafe?.user?.id;
-    if (!userId) return;
+    async function saveToDB() {
+        const userId = tg.initDataUnsafe?.user?.id;
+        if (!userId) return;
 
-    // Используем upsert: если юзер есть - обновит, если нет - создаст
-    const { error } = await supabase
-        .from('players')
-        .upsert({
-            user_id: userId,
-            points: Math.floor(state.points),
-            energy: Math.floor(state.energy),
-            active_hero_id: state.activeHeroId
-            // market_levels: state.marketLevels
-        });
-    
-    if (error) console.error("Ошибка сохранения:", error);
-}
-
-async function fetchLeaderboard() {
-    const list = document.getElementById('leaderboard-list');
-    list.innerHTML = '<div style="text-align:center; padding:30px;">Загрузка топа...</div>';
-    
-    const { data, error } = await supabase
-        .from('players')
-        .select('user_id, points')
-        .order('points', { ascending: false })
-        .limit(10);
-
-    if (data) {
-        list.innerHTML = '';
-        data.forEach((user, index) => {
-            const isMe = user.user_id == tg.initDataUnsafe?.user?.id;
-            list.innerHTML += `
-                <div class="lb-row ${isMe ? 'me' : ''}">
-                    <div class="lb-rank">${index + 1}</div>
-                    <div class="lb-name">Player ${user.user_id}</div>
-                    <div class="lb-points">${Math.floor(user.points).toLocaleString()}</div>
-                </div>
-            `;
-        });
+        await supabase
+            .from('players')
+            .upsert({
+                user_id: userId,
+                points: Math.floor(state.points),
+                energy: Math.floor(state.energy),
+                active_hero_id: state.activeHeroId,
+                market_levels: state.marketLevels,
+                max_energy: state.maxEnergy,
+                click_power: state.clickPower
+            });
     }
-}
+
+    // --- Логика клика и сохранения ---
+    function save() {
+        saveToDB();
+    }
+
+    // Сохранение при выходе
+    window.onbeforeunload = saveToDB;
+
+    // Авто-сохранение каждые 10 секунд
+    setInterval(saveToDB, 10000);
 
     async function init() {
-        const saved = localStorage.getItem('nova_engine_save');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            state = { ...state, ...parsed };
-            const elapsed = Math.floor((Date.now() - state.lastUnix) / 1000);
-            state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
-        }
         await loadFromDB();
-        updateUI();
         startLoops();
     }
 

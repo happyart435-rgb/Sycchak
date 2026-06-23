@@ -520,18 +520,14 @@ function closeModal() { document.getElementById('item-modal').style.display = 'n
 
 // Остальные функции (handlePromo, sellItem, animation и т.д.) оставляйте без изменений
 
-window.onload = () => { 
-    // Убираем отсутствующие функции, чтобы они не вызывали ошибку
-    // initStars(); 
-    // draw(); 
+window.onload = async () => { 
+    tg.expand();
     
-    // Запускаем загрузку профиля
-    loadUser(); 
+    // Сначала проверяем, перешел ли юзер по рефке
+    await checkReferral();
     
-    // Расширяем окно Telegram
-    if (window.Telegram && window.Telegram.WebApp) {
-        tg.expand();
-    }
+    // Потом загружаем профиль
+    await loadUser(); 
 };
 
     // Открытие и закрытие окна правил

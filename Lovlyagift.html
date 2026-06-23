@@ -151,11 +151,13 @@
     let starsEarned = 0;
     let gameActive = true;
     let gameStartTime = Date.now();
-    let baseSpeed = 2.0; 
-    let spawnRate = 1000;
+    
+    // УВЕЛИЧИЛИ СКОРОСТЬ (было 2.0)
+    let baseSpeed = 6.0; 
+    let spawnRate = 800;
     let bombChance = 0.12;
 
-    const ASSETS = ['bear.png', 'box.png', 'car.png', 'star.png', 'case.png'];
+    const ASSETS = ["1may.jpg", "1may.png", "chassiki.png", "sliva.png", "soska.png", "zirka.png", "2025.jpg", "bear.png", "book.jpg", "booox.png", "botinok.png", "box.png", "car.png", "raketa.png", "ccolso2.png", "cerrrdce.jpg", "chemodan.jpg", "ciga.png", "colso.png", "costum.jpg", "cvetok.png", "dog.png", "dyxi.png", "fonarik.jpg", "grob.jpg", "gyba.png", "happybirthday.jpg", "heart.png", "helmet.png", "kalendar.png", "kepka.png", "kirpitch.jpg", "koks.jpg", "koktel.png", "kot.png", "kotel.png", "krovatka.jpg", "lolipop.png", "lucky.jpg", "mafin.jpg", "metch.png", "narkotiki.png", "obyv.jpg", "orel.jpg", "otkritka.jpg", "paska.jpg", "rozza.png", "rykzak.jpg", "shapka.png", "shar.jpg", "shlem.png", "soska.jpg", "star.png", "statyya.jpg", "venok.png", "yayko.png", "zhele.png", "zmei.png", "meczcc.png", "kryg.PNG", "gribb.PNG", "zirka.PNG", "cvetk.PNG", "sshapka.PNG", "tyfli.PNG"];
 
     function getAssetUrl(fileName) { return window.location.origin + '/' + fileName; }
 
@@ -165,36 +167,18 @@
         starLabel.innerText = Math.floor(data?.stars || 0);
     }
 
-async function saveAndExit() {
-    // Если заработали звезды, пробуем сохранить
-    if (userId && starsEarned > 0) {
-        try {
-            // 1. Получаем текущий баланс
-            const { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
-            const currentTotal = data?.stars || 0;
-            
-            // 2. Обновляем базу
-            await SB.from('users')
-                .update({ stars: currentTotal + starsEarned })
-                .eq('user_id', userId);
-                
-            console.log("Сохранено:", currentTotal + starsEarned);
-        } catch (e) {
-            console.error("Ошибка сохранения:", e);
+    async function saveAndExit() {
+        if (userId && starsEarned > 0) {
+            try {
+                const { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
+                await SB.from('users').update({ stars: (data?.stars || 0) + starsEarned }).eq('user_id', userId);
+            } catch (e) { console.error(e); }
         }
+        window.location.href = 'index.html';
     }
-    
-    // После сохранения (или если звезд нет) уходим в меню
-    window.location.href = 'index.html';
-}
 
-function spawnItem() {
+    function spawnItem() {
         if (!gameActive) return;
-
-        const elapsed = (Date.now() - gameStartTime) / 1000;
-        const difficulty = Math.min(elapsed / 25, 2);
-        const currentSpeed = baseSpeed + (difficulty * 3);
-        const currentSpawnRate = Math.max(300, spawnRate - (difficulty * 500));
 
         const item = document.createElement('div');
         item.className = 'falling-item';
@@ -215,26 +199,25 @@ function spawnItem() {
             item.remove();
             
             if (type === 'bomb') {
-                starsEarned = 0; // Сбрасываем заработанные за этот раунд звезды
+                starsEarned = 0; 
                 endGame('bomb');
             } else {
                 starsEarned++;
-                // Обновляем отображение в UI
                 starLabel.innerText = parseInt(starLabel.innerText) + 1;
                 tg.HapticFeedback.impactOccurred('light');
             }
         };
 
-        // Логика падения
         let pos = -100;
         function fall() {
             if (!gameActive || isCaught) return;
-            pos += currentSpeed;
+            pos += baseSpeed; // Используем базовую скорость
             item.style.top = pos + 'px';
 
             if (pos > window.innerHeight - 60) {
-                // Если подарок упал в зону и не был пойман
+                // Если подарок упал в danger-zone — игра окончена и заработок 0
                 if (type === 'gift') {
+                    starsEarned = 0; 
                     endGame('miss');
                 }
                 item.remove();
@@ -242,31 +225,19 @@ function spawnItem() {
             }
             requestAnimationFrame(fall);
         }
-        
         requestAnimationFrame(fall);
-        setTimeout(spawnItem, currentSpawnRate);
+        setTimeout(spawnItem, spawnRate);
     }
 
-function endGame(reason) {
-    if (!gameActive) return;
-    gameActive = false;
-    
-    const modal = document.getElementById('fail-modal');
-    const title = document.getElementById('fail-title');
-    const resText = document.getElementById('final-res');
-    
-    if (reason === 'bomb') {
-        title.innerText = "БАБАХ!";
-        resText.innerText = "ВЫ НИЧЕГО НЕ ЗАРАБОТАЛИ";
-    } else {
-        title.innerText = "ИГРА ЗАВЕРШЕНА";
-        resText.innerText = starsEarned > 0 
-            ? `ВЫ ЗАРАБОТАЛИ: ${starsEarned} ⭐` 
-            : "ВЫ НИЧЕГО НЕ ЗАРАБОТАЛИ";
+    function endGame(reason) {
+        if (!gameActive) return;
+        gameActive = false;
+        
+        const modal = document.getElementById('fail-modal');
+        document.getElementById('fail-title').innerText = reason === 'bomb' ? "БАБАХ!" : "ВЫ ПРОПУСТИЛИ ПОДАРОК!";
+        document.getElementById('final-res').innerText = "ВЫ НИЧЕГО НЕ ЗАРАБОТАЛИ";
+        modal.style.display = 'flex';
     }
-    
-    modal.style.display = 'flex';
-}
 
     initStars();
     spawnItem();

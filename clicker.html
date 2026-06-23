@@ -120,24 +120,90 @@ button:hover{
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
 
-let coins = Number(localStorage.getItem("coins")) || 0;
-let perClick = Number(localStorage.getItem("perClick")) || 1;
-let powerCost = Number(localStorage.getItem("powerCost")) || 50;
+const supabase = window.supabase.createClient(
+    "https://ypvvoqbvzfmirprevazq.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzM3NTgsImV4cCI6MjA5NzQ0OTc1OH0.bt4iVMEX0JtYzJxW7gtRxWEOz0eXPIOautw7_FALhkc"
+);
 
-let autoIncome = Number(localStorage.getItem("autoIncome")) || 0;
-let autoCost = Number(localStorage.getItem("autoCost")) || 100;
+// Временно фиксированный пользователь
+const USER_ID = 123456789;
 
-function save(){
-    localStorage.setItem("coins", coins);
-    localStorage.setItem("perClick", perClick);
-    localStorage.setItem("powerCost", powerCost);
-    localStorage.setItem("autoIncome", autoIncome);
-    localStorage.setItem("autoCost", autoCost);
+let coins = 0;
+let perClick = 1;
+let powerCost = 50;
+let autoIncome = 0;
+let autoCost = 100;
+let energy = 1000;
+
+async function loadPlayer() {
+
+    let { data } = await supabase
+        .from("players")
+        .select("*")
+        .eq("user_id", USER_ID)
+        .single();
+
+    if (!data) {
+
+        await supabase
+            .from("players")
+            .insert({
+                user_id: USER_ID,
+                points: 0,
+                energy: 1000,
+                per_click: 1,
+                power_cost: 50,
+                auto_income: 0,
+                auto_cost: 100,
+                active_hero_id: 0
+            });
+
+        data = {
+            points: 0,
+            energy: 1000,
+            per_click: 1,
+            power_cost: 50,
+            auto_income: 0,
+            auto_cost: 100
+        };
+    }
+
+    coins = data.points || 0;
+    energy = data.energy || 1000;
+    perClick = data.per_click || 1;
+    powerCost = data.power_cost || 50;
+    autoIncome = data.auto_income || 0;
+    autoCost = data.auto_cost || 100;
+
+    updateUI();
+}
+
+async function savePlayer() {
+
+    const { error } = await supabase
+        .from("players")
+        .update({
+            points: coins,
+            energy: energy,
+            per_click: perClick,
+            power_cost: powerCost,
+            auto_income: autoIncome,
+            auto_cost: autoCost,
+            updated_at: new Date().toISOString()
+        })
+        .eq("user_id", USER_ID);
+
+    if(error){
+        console.error(error);
+    }
 }
 
 function updateUI(){
+
     document.getElementById("coins").innerText =
         Math.floor(coins);
 
@@ -154,13 +220,18 @@ function updateUI(){
         autoCost;
 }
 
-document.getElementById("hamster").addEventListener("click", ()=>{
+document
+.getElementById("hamster")
+.addEventListener("click", ()=>{
+
+    if(energy <= 0){
+        return;
+    }
 
     coins += perClick;
+    energy--;
 
     updateUI();
-    save();
-
 });
 
 function buyPower(){
@@ -171,12 +242,12 @@ function buyPower(){
     }
 
     coins -= powerCost;
-    perClick += 1;
+    perClick++;
 
-    powerCost = Math.floor(powerCost * 1.7);
+    powerCost =
+        Math.floor(powerCost * 1.7);
 
     updateUI();
-    save();
 }
 
 function buyAuto(){
@@ -187,12 +258,12 @@ function buyAuto(){
     }
 
     coins -= autoCost;
-    autoIncome += 1;
+    autoIncome++;
 
-    autoCost = Math.floor(autoCost * 1.8);
+    autoCost =
+        Math.floor(autoCost * 1.8);
 
     updateUI();
-    save();
 }
 
 setInterval(()=>{
@@ -200,11 +271,16 @@ setInterval(()=>{
     coins += autoIncome;
 
     updateUI();
-    save();
 
 },1000);
 
-updateUI();
+setInterval(async ()=>{
+
+    await savePlayer();
+
+},5000);
+
+window.onload = loadPlayer;
 
 </script>
 

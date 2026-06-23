@@ -164,7 +164,7 @@
         starLabel.innerText = Math.floor(data?.stars || 0);
     }
 
-    function spawnItem() {
+function spawnItem() {
         if (!gameActive) return;
 
         const elapsed = (Date.now() - gameStartTime) / 1000;
@@ -174,7 +174,7 @@
 
         const item = document.createElement('div');
         item.className = 'falling-item';
-        let isCaught = false; // Локальный флаг для каждого предмета
+        let isCaught = false; 
         
         let type = Math.random() < bombChance ? 'bomb' : 'gift';
         let imgName = type === 'bomb' ? 'bomb.png' : ASSETS[Math.floor(Math.random() * ASSETS.length)];
@@ -191,14 +191,17 @@
             item.remove();
             
             if (type === 'bomb') {
+                starsEarned = 0; // Сбрасываем заработанные за этот раунд звезды
                 endGame('bomb');
             } else {
                 starsEarned++;
+                // Обновляем отображение в UI
                 starLabel.innerText = parseInt(starLabel.innerText) + 1;
                 tg.HapticFeedback.impactOccurred('light');
             }
         };
 
+        // Логика падения
         let pos = -100;
         function fall() {
             if (!gameActive || isCaught) return;
@@ -206,33 +209,40 @@
             item.style.top = pos + 'px';
 
             if (pos > window.innerHeight - 60) {
-                if (type === 'gift') endGame('miss');
+                // Если подарок упал в зону и не был пойман
+                if (type === 'gift') {
+                    endGame('miss');
+                }
                 item.remove();
                 return;
             }
             requestAnimationFrame(fall);
         }
+        
         requestAnimationFrame(fall);
         setTimeout(spawnItem, currentSpawnRate);
     }
 
-    function endGame(reason) {
-        if (!gameActive) return;
-        gameActive = false;
-        
-        const modal = document.getElementById('fail-modal');
-        document.getElementById('fail-title').innerText = reason === 'bomb' ? "БАБАХ!" : "ИГРА ЗАВЕРШЕНА";
-        document.getElementById('final-res').innerText = `ВЫ ЗАРАБОТАЛИ: ${starsEarned} ⭐`;
-        modal.style.display = 'flex';
+function endGame(reason) {
+    if (!gameActive) return;
+    gameActive = false;
+    
+    const modal = document.getElementById('fail-modal');
+    const title = document.getElementById('fail-title');
+    const resText = document.getElementById('final-res');
+    
+    if (reason === 'bomb') {
+        title.innerText = "БАБАХ!";
+        resText.innerText = "ВЫ НИЧЕГО НЕ ЗАРАБОТАЛИ";
+    } else {
+        title.innerText = "ИГРА ЗАВЕРШЕНА";
+        resText.innerText = starsEarned > 0 
+            ? `ВЫ ЗАРАБОТАЛИ: ${starsEarned} ⭐` 
+            : "ВЫ НИЧЕГО НЕ ЗАРАБОТАЛИ";
     }
-
-    async function saveAndExit() {
-        if (userId && starsEarned > 0) {
-            const { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
-            await SB.from('users').update({ stars: (data?.stars || 0) + starsEarned }).eq('user_id', userId);
-        }
-        window.location.href = 'index.html';
-    }
+    
+    modal.style.display = 'flex';
+}
 
     initStars();
     spawnItem();

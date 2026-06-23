@@ -177,57 +177,80 @@
         window.location.href = 'index.html';
     }
 
-    function spawnItem() {
-        if (!gameActive) return;
+let itemsPerWave = 1; 
 
-        const item = document.createElement('div');
-        item.className = 'falling-item';
-        let isCaught = false; 
+function spawnItem() {
+    if (!gameActive) return;
+
+    // Определение количества предметов в этой волне
+    let count = (starsEarned >= 10 && Math.random() < 0.3) ? 2 : 1;
+
+    // Увеличение скорости после 20 подарков
+    if (starsEarned >= 20) {
+        baseSpeed = 8.5;
+    }
+
+    // Создаем предметы
+    for (let i = 0; i < count; i++) {
+        createFallingItem();
+    }
+
+    // Регулируем частоту следующей волны
+    let dynamicSpawnRate = Math.max(400, spawnRate - (starsEarned * 15));
+    
+    // setTimeout теперь вызывается один раз на всю "волну"
+    setTimeout(spawnItem, dynamicSpawnRate);
+}
+
+function createFallingItem() {
+    if (!gameActive) return;
+
+    const item = document.createElement('div');
+    item.className = 'falling-item';
+    let isCaught = false;
+    
+    let type = Math.random() < bombChance ? 'bomb' : 'gift';
+    let imgName = type === 'bomb' ? 'bomb.png' : ASSETS[Math.floor(Math.random() * ASSETS.length)];
+
+    item.innerHTML = `<img src="${getAssetUrl(imgName)}" onerror="this.src='star.png'">`;
+    item.style.left = Math.random() * (window.innerWidth - 75) + 'px';
+    item.style.top = '-100px';
+    screen.appendChild(item);
+
+    item.onmousedown = item.ontouchstart = (e) => {
+        e.preventDefault();
+        if (isCaught || !gameActive) return;
+        isCaught = true;
+        item.remove();
         
-        let type = Math.random() < bombChance ? 'bomb' : 'gift';
-        let imgName = type === 'bomb' ? 'bomb.png' : ASSETS[Math.floor(Math.random() * ASSETS.length)];
+        if (type === 'bomb') {
+            starsEarned = 0; 
+            endGame('bomb');
+        } else {
+            starsEarned++;
+            starLabel.innerText = starsEarned;
+            tg.HapticFeedback.impactOccurred('light');
+        }
+    };
 
-        item.innerHTML = `<img src="${getAssetUrl(imgName)}" onerror="this.src='star.png'">`;
-        item.style.left = Math.random() * (window.innerWidth - 75) + 'px';
-        item.style.top = '-100px';
-        screen.appendChild(item);
+    let pos = -100;
+    function fall() {
+        if (!gameActive || isCaught) return;
+        pos += baseSpeed;
+        item.style.top = pos + 'px';
 
-        item.onmousedown = item.ontouchstart = (e) => {
-            e.preventDefault();
-            if (isCaught || !gameActive) return;
-            isCaught = true;
-            item.remove();
-            
-            if (type === 'bomb') {
+        if (pos > window.innerHeight - 60) {
+            if (type === 'gift') {
                 starsEarned = 0; 
-                endGame('bomb');
-            } else {
-                starsEarned++;
-                starLabel.innerText = parseInt(starLabel.innerText) + 1;
-                tg.HapticFeedback.impactOccurred('light');
+                endGame('miss');
             }
-        };
-
-        let pos = -100;
-        function fall() {
-            if (!gameActive || isCaught) return;
-            pos += baseSpeed; // Используем базовую скорость
-            item.style.top = pos + 'px';
-
-            if (pos > window.innerHeight - 60) {
-                // Если подарок упал в danger-zone — игра окончена и заработок 0
-                if (type === 'gift') {
-                    starsEarned = 0; 
-                    endGame('miss');
-                }
-                item.remove();
-                return;
-            }
-            requestAnimationFrame(fall);
+            item.remove();
+            return;
         }
         requestAnimationFrame(fall);
-        setTimeout(spawnItem, spawnRate);
     }
+    requestAnimationFrame(fall);
+}
 
 function endGame(reason) {
     if (!gameActive) return;

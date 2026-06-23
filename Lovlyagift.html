@@ -194,27 +194,28 @@ async function initStars() {
         console.error(e);
     }
 }
+    // Добавь эти переменные к остальным let
+let gameStartTime = Date.now();
+let baseSpeed = 2.0; 
+let spawnRate = 1000; // Начальная задержка
 
-    function spawnItem() {
+function spawnItem() {
         if (!gameActive || isPaused) return;
+
+        // --- ЛОГИКА СЛОЖНОСТИ ---
+        const elapsed = (Date.now() - gameStartTime) / 1000; 
+        const difficulty = Math.min(elapsed / 25, 2); // Максимальная сложность через 25 сек
+        
+        // Скорость растет, интервал спавна уменьшается
+        const currentSpeed = baseSpeed + (difficulty * 3);
+        const currentSpawnRate = Math.max(300, spawnRate - (difficulty * 500));
 
         const item = document.createElement('div');
         item.className = 'falling-item';
         
-        let type = 'gift';
-        let imgName = ASSETS[Math.floor(Math.random() * ASSETS.length)];
-        let isCaught = false; 
-
-        if (Math.random() < bombChance) {
-            type = 'bomb';
-            imgName = 'bomb.png';
-        } else if (giftsCollected >= 50) {
-            type = 'star';
-            imgName = 'star.png';
-            item.classList.add('item-star');
-            giftsCollected = 0;
-            giftLabel.innerText = giftsCollected;
-        }
+        // Определяем тип (бомба или обычный предмет)
+        let type = Math.random() < bombChance ? 'bomb' : 'gift';
+        let imgName = type === 'bomb' ? 'bomb.png' : ASSETS[Math.floor(Math.random() * ASSETS.length)];
 
         item.setAttribute('data-type', type);
         item.innerHTML = `<img src="${getAssetUrl(imgName)}" onerror="this.src='star.png'">`;
@@ -223,57 +224,49 @@ async function initStars() {
         item.style.top = '-100px';
         screen.appendChild(item);
 
-const handleHit = (e) => {
-    if (e.cancelable) e.preventDefault();
-    if (!gameActive || isPaused || isCaught) return;
+        // Функция обработки нажатия
+        const handleHit = (e) => {
+            if (e.cancelable) e.preventDefault();
+            if (!gameActive || isPaused || isCaught) return;
 
-    isCaught = true; 
-    const currentType = item.getAttribute('data-type');
-    
-    if (currentType === 'bomb') {
-        endGame('bomb');
-    } else {
-        if (currentType === 'star') {
-            starsEarned++;
-            // Просто обновляем UI, не дергаем базу!
-            starLabel.innerText = parseInt(starLabel.innerText) + 1;
-            tg.HapticFeedback.notificationOccurred('success');
-        } else {
-            giftsCollected++;
-            giftLabel.innerText = giftsCollected;
-            if (giftsCollected % 10 === 0) baseSpeed += 0.3;
-            tg.HapticFeedback.impactOccurred('light');
-        }
-        item.remove();
-    }
-};
+            isCaught = true;
+            item.remove();
+            
+            if (type === 'bomb') {
+                endGame('bomb');
+            } else {
+                starsEarned++;
+                starLabel.innerText = starsEarned;
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        };
 
         item.onmousedown = item.ontouchstart = handleHit;
 
         let pos = -100;
-        let speed = baseSpeed + Math.random() * 2;
-        const dangerLine = window.innerHeight - 60;
-        
+        let isCaught = false; // Флаг для предотвращения двойного клика
+
         function fall() {
-            if (!gameActive || isCaught) return; 
+            if (!gameActive || isCaught) return;
             if (!isPaused) {
-                pos += speed;
+                pos += currentSpeed;
                 item.style.top = pos + 'px';
             }
 
-            if (pos + 60 > dangerLine && type !== 'bomb') {
-                endGame('miss');
+            // Проверка: предмет упал в красную зону
+            if (pos > window.innerHeight - 60) {
+                if (type === 'gift') {
+                    endGame('miss');
+                }
                 item.remove();
                 return;
             }
-
-            if (pos > window.innerHeight) {
-                item.remove();
-            } else {
-                requestAnimationFrame(fall);
-            }
+            requestAnimationFrame(fall);
         }
+
         requestAnimationFrame(fall);
+        // Запуск следующего спавна через рассчитанный интервал
+        setTimeout(spawnItem, currentSpawnRate);
     }
 
     function togglePause() {
@@ -326,13 +319,6 @@ async function saveAndExit() {
     }
     window.location.href = 'index.html';
 }
-
-    function gameLoop() {
-        if (gameActive && !isPaused) {
-            spawnItem();
-        }
-        setTimeout(gameLoop, spawnRate);
-    }
 
     initStars();
     gameLoop();

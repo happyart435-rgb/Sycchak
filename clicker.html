@@ -212,6 +212,17 @@
         .lb-name { flex: 1; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .lb-points { font-weight: 800; font-size: 12px; color: #fff; opacity: 0.7; }
 
+        /* Стили для заблокированных предметов */
+.card-item.locked {
+    filter: grayscale(1) brightness(0.4);
+    pointer-events: none;
+    opacity: 0.6;
+}
+.card-item.locked .btn-action {
+    background: #444 !important;
+    color: #888 !important;
+}
+
     </style>
 </head>
 <body>
@@ -309,16 +320,18 @@
     const BACKEND_URL = 'https://stars-drop.vercel.app/api';
     tg.expand();
 
-    // ИСПРАВЛЕННЫЙ МАССИВ HEROES
-    const heroes = [
-        { id: 0, name: "Новичок", x: 1, price: 0, img: "hero.png", color: "#facc15", bg: "#1a1605" }, 
-        { id: 1, name: "Путешественник", x: 5, price: 500000, img: "img/hero1.jpg", color: "#facc15", bg: "#2a250f" },
-        { id: 2, name: "Шаман", x: 10, price: 1000000, img: "img/hero2.jpg", color: "#a855f7", bg: "#251635" },
-        { id: 3, name: "Ниндзя", x: 20, price: 5000000, img: "img/hero3.jpg", color: "#3b82f6", bg: "#162235" },
-        { id: 4, name: "Король", x: 30, price: 15000000, img: "img/hero5.jpg", color: "#eab308", bg: "#352e16" },
-        { id: 5, name: "Пират", x: 45, price: 100000000, img: "img/hero6.jpg", color: "#ef4444", bg: "#351616" },
-        { id: 6, name: "Космонавт", x: 55, price: 10000000000, img: "img/hero7.jpg", color: "#60a5fa", bg: "#162235" }
-    ];
+    
+let prestigeMultiplier = 1;
+
+const heroes = [
+    { id: 0, name: "Новичок", x: 1, price: 0, img: "hero.png", color: "#facc15", bg: "#1a1605" },
+    { id: 1, name: "Путешественник", x: 3, price: 750000, img: "img/hero1.jpg", color: "#facc15", bg: "#2a250f" },
+    { id: 2, name: "Шаман", x: 8, price: 2500000, img: "img/hero2.jpg", color: "#a855f7", bg: "#251635" },
+    { id: 3, name: "Ниндзя", x: 15, price: 8000000, img: "img/hero3.jpg", color: "#3b82f6", bg: "#162235" },
+    { id: 4, name: "Король", x: 30, price: 30000000, img: "img/hero5.jpg", color: "#eab308", bg: "#352e16" },
+    { id: 5, name: "Пират", x: 60, price: 150000000, img: "img/hero6.jpg", color: "#ef4444", bg: "#351616" },
+    { id: 6, name: "Космонавт", x: 120, price: 800000000, img: "img/hero7.jpg", color: "#60a5fa", bg: "#162235" }
+];
 
     const marketData = [
         { id: 0, name: "Энергетик", baseAdd: 5, basePrice: 150, icon: "⚡️", type: "click" },
@@ -593,6 +606,17 @@ async function exchangeTokensToStars() {
     }
 
     window.onload = init;
+
+    function performPrestige() {
+    if (confirm("Сбросить прогресс и получить множитель x2?")) {
+        state.points = 0;
+        state.activeHeroId = 0;
+        prestigeMultiplier *= 2;
+        updateUI();
+        save();
+        alert("Престиж получен! Новый множитель: " + prestigeMultiplier);
+    }
+}
 </script>
 </body>
 </html>

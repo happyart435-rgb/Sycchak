@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Pass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0d0a05; color: white; font-family: sans-serif; }
+        .gradient-gold { background: linear-gradient(to right, #d4af37, #ffe600); }
+    </style>
+</head>
+<body class="p-5">
+
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold uppercase text-[#d4af37]">Боевой Пропуск</h1>
+        <a href="index.html" class="text-sm underline text-gray-400">Назад</a>
+    </div>
+
+    <div class="bg-[#111] p-6 rounded-2xl border border-[rgba(212,175,55,0.3)] mb-6">
+        <div class="flex justify-between mb-2">
+            <span>Уровень <span id="lvl-num">1</span></span>
+            <span id="xp-text">0 / 50 XP</span>
+        </div>
+        <div class="w-full h-4 bg-gray-800 rounded-full overflow-hidden">
+            <div id="progress-fill" class="h-full gradient-gold" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="space-y-4">
+        <div class="bg-[#111] p-4 rounded-xl flex items-center justify-between border border-[#222]">
+            <span>Уровень 5: Бонусные звезды</span>
+            <span class="text-[#d4af37]">Locked</span>
+        </div>
+        <div class="bg-[#111] p-4 rounded-xl flex items-center justify-between border border-[#222]">
+            <span>Уровень 10: Скин "Золотой подарок"</span>
+            <span class="text-[#d4af37]">Locked</span>
+        </div>
+    </div>
+
+    <script>
+        // Функция для загрузки прогресса из Supabase
+        async function loadBP() {
+            // userId берется из tg.initDataUnsafe (как в твоих других файлах)
+            // const { data } = await SB.from('battle_pass').select('*').eq('user_id', userId).single();
+            
+            // Тестовые данные (замени на запрос из базы)
+            const level = 1;
+            const xp = 25; 
+            const progress = (xp / 50) * 100;
+
+            document.getElementById('lvl-num').innerText = level;
+            document.getElementById('xp-text').innerText = `${xp} / 50 XP`;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+        }
+
+        loadBP();
+    </script>
+</body>
+</html>

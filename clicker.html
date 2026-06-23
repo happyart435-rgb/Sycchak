@@ -213,16 +213,15 @@
         .lb-points { font-weight: 800; font-size: 12px; color: #fff; opacity: 0.7; }
 
         /* Стили для заблокированных предметов */
-.card-item.locked {
-    filter: grayscale(1) brightness(0.4);
-    pointer-events: none;
-    opacity: 0.6;
-}
-.card-item.locked .btn-action {
-    background: #444 !important;
-    color: #888 !important;
-}
-
+        .card-item.locked {
+            filter: grayscale(1) brightness(0.4);
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        .card-item.locked .btn-action {
+            background: #444 !important;
+            color: #888 !important;
+        }
     </style>
 </head>
 <body>
@@ -246,8 +245,8 @@
             <h1 id="balance-num">0</h1>
         </div>
         <button onclick="exchangeTokensToStars()" class="mt-4 w-full max-w-[200px] mx-auto py-3 bg-yellow-400 text-black font-black text-[10px] rounded-2xl uppercase shadow-lg shadow-yellow-400/20 active:scale-95 transition-all">
-    Обменять 1млрд → 1⭐
-</button>
+            Обменять 1млрд → 1⭐
+        </button>
         <div class="energy-container">
             <div class="energy-bar-bg"><div id="energy-fill"></div></div>
             <div class="energy-text">⚡ <span id="energy-val">1000</span> / <span id="max-energy-val">1000</span></div>
@@ -256,7 +255,7 @@
 
     <div class="game-core" id="tap-zone">
         <div class="hero-platform"></div>
-        <img src="hero.png" id="hero-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
+        <img src="pepe1.png" id="hero-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
     </div>
 
     <div class="drawer-wardrobe" id="info-panel">
@@ -266,7 +265,7 @@
             <div class="info-title">Как получить Stars?</div>
             <p class="info-text">
                 В конце каждого месяца происходит глобальный обмен! <br><br>
-                Если ваш баланс превышает <span class="info-highlight">100 млрд Nova Token</span>, они автоматически конвертируются в <span class="info-highlight">Stars / Ton</span>. <br><br>
+                Если ваш баланс превышает <span class="info-highlight">100 млрд Nova Token</span>, они автоматически конвертируются in <span class="info-highlight">Stars / Ton</span>. <br><br>
                 Актуальный курс обмена всегда доступен в нашем официальном канале.
             </p>
             <a href="https://t.me/StarDrop_channel" target="_blank" class="btn-telegram">ПЕРЕЙТИ В КАНАЛ</a>
@@ -286,8 +285,7 @@
                 Каждый месяц <span class="info-highlight">ТОП-5</span> игрокам мы разыгрываем реальные <span style="color:#facc15;">Stars & Ton</span>! Стань легендой Nova.
             </div>
         </div>
-        <div class="scroll-area" id="leaderboard-list" style="display: flex; flex-direction: column; gap: 0;">
-            </div>
+        <div class="scroll-area" id="leaderboard-list" style="display: flex; flex-direction: column; gap: 0;"></div>
     </div>
 
     <div class="drawer-wardrobe" id="wardrobe-panel">
@@ -320,18 +318,18 @@
     const BACKEND_URL = 'https://stars-drop.vercel.app/api';
     tg.expand();
 
-    
-let prestigeMultiplier = 1;
+    let prestigeMultiplier = 1;
 
-const heroes = [
-    { id: 0, name: "Новичок", x: 1, price: 0, img: "hero.png", color: "#facc15", bg: "#1a1605" },
-    { id: 1, name: "Путешественник", x: 3, price: 750000, img: "img/hero1.jpg", color: "#facc15", bg: "#2a250f" },
-    { id: 2, name: "Шаман", x: 8, price: 2500000, img: "img/hero2.jpg", color: "#a855f7", bg: "#251635" },
-    { id: 3, name: "Ниндзя", x: 15, price: 8000000, img: "img/hero3.jpg", color: "#3b82f6", bg: "#162235" },
-    { id: 4, name: "Король", x: 30, price: 30000000, img: "img/hero5.jpg", color: "#eab308", bg: "#352e16" },
-    { id: 5, name: "Пират", x: 60, price: 150000000, img: "img/hero6.jpg", color: "#ef4444", bg: "#351616" },
-    { id: 6, name: "Космонавт", x: 120, price: 800000000, img: "img/hero7.jpg", color: "#60a5fa", bg: "#162235" }
-];
+    // Обновленный массив героев: без текстовых названий (кроме финального Hero.png) и с новыми путями к картинкам
+    const heroes = [
+        { id: 0, x: 1, price: 0, img: "pepe1.png", color: "#facc15", bg: "#1a1605" },
+        { id: 1, x: 3, price: 750000, img: "pepe2.png", color: "#facc15", bg: "#2a250f" },
+        { id: 2, x: 8, price: 2500000, img: "pepe3.png", color: "#a855f7", bg: "#251635" },
+        { id: 3, x: 15, price: 8000000, img: "pepe4.png", color: "#3b82f6", bg: "#162235" },
+        { id: 4, x: 30, price: 30000000, img: "pepe5.png", color: "#eab308", bg: "#352e16" },
+        { id: 5, x: 60, price: 150000000, img: "pepe6.png", color: "#ef4444", bg: "#351616" },
+        { id: 6, x: 120, price: 800000000, img: "Hero.png", color: "#60a5fa", bg: "#162235" }
+    ];
 
     const marketData = [
         { id: 0, name: "Энергетик", baseAdd: 5, basePrice: 150, icon: "⚡️", type: "click" },
@@ -390,7 +388,6 @@ const heroes = [
         const list = document.getElementById('leaderboard-list');
         list.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.5;">Ищем легенд...</div>';
         try {
-            // Исправлен путь к лидерборду
             const res = await fetch(`${BACKEND_URL}/get_leaders`);
             const topUsers = await res.json();
             list.innerHTML = '';
@@ -406,26 +403,23 @@ const heroes = [
             });
         } catch (e) { list.innerHTML = '<div style="text-align:center; padding:30px; color:red;">Ошибка загрузки топа</div>'; }
     }
-// Функция обмена токенов на звезды
-async function exchangeTokensToStars() {
-    const rate = 1000000000; // 1 миллиард
-    if (state.points < rate) {
-        tg.showAlert('Нужен минимум 1 миллиард Nova!');
-        return;
+
+    async function exchangeTokensToStars() {
+        const rate = 1000000000;
+        if (state.points < rate) {
+            tg.showAlert('Нужен минимум 1 миллиард Nova!');
+            return;
+        }
+        
+        const starsToGet = Math.floor(state.points / rate);
+        state.points -= starsToGet * rate;
+        
+        updateUI();
+        save();
+        
+        tg.showAlert(`Успешно! Вы получили ${starsToGet} звезд(ы).`);
     }
-    
-    const starsToGet = Math.floor(state.points / rate);
-    state.points -= starsToGet * rate;
-    
-    // Сохраняем состояние после обмена
-    updateUI();
-    save();
-    
-    tg.showAlert(`Успешно! Вы получили ${starsToGet} звезд(ы).`);
-    
-    // Тут можно добавить вызов API, если нужно сохранять звезды в БД
-    // await fetch(`${BACKEND_URL}/add_stars...`);
-}
+
     async function init() {
         const saved = localStorage.getItem('nova_engine_save');
         if (saved) {
@@ -446,7 +440,6 @@ async function exchangeTokensToStars() {
                 updateUI();
             }
         }, 1000);
-        // ПРИНУДИТЕЛЬНОЕ сохранение в базу каждые 15 сек
         setInterval(save, 15000); 
     }
 
@@ -470,7 +463,6 @@ async function exchangeTokensToStars() {
         showPop(x, y, profit);
         updateUI();
         
-        // Маленький шанс на моментальное сохранение при клике
         if(state.points % 100 === 0) save();
     }
 
@@ -529,6 +521,7 @@ async function exchangeTokensToStars() {
         }
     }
 
+    // Из рендеринга убран лишний div с именем героя (card-title)
     function renderSkins() {
         const container = document.getElementById('skin-list');
         container.innerHTML = '';
@@ -538,8 +531,7 @@ async function exchangeTokensToStars() {
             container.innerHTML += `
                 <div class="card-item ${isActive ? 'active-item' : ''}">
                     <img src="${h.img}" class="card-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
-                    <div class="card-title">${h.name}</div>
-                    <div class="card-desc">МНОЖИТЕЛЬ x${h.x}</div>
+                    <div class="card-desc" style="margin-top: 10px;">МНОЖИТЕЛЬ x${h.x}</div>
                     <button class="btn-action ${isOwned ? 'btn-owned' : 'btn-buy'}" 
                             ${(!isOwned && state.points < h.price) ? 'disabled' : ''} 
                             onclick="handleHero(${h.id})">
@@ -596,27 +588,27 @@ async function exchangeTokensToStars() {
     function save() {
         state.lastUnix = Date.now();
         localStorage.setItem('nova_engine_save', JSON.stringify(state));
-        saveToDB(); // ОБЯЗАТЕЛЬНО вызываем функцию отправки в базу
+        saveToDB();
     }
 
     async function safeGoBack() {
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-        await saveToDB(); // Ждем завершения записи
+        await saveToDB();
         window.location.href = 'index.html';
     }
 
     window.onload = init;
 
     function performPrestige() {
-    if (confirm("Сбросить прогресс и получить множитель x2?")) {
-        state.points = 0;
-        state.activeHeroId = 0;
-        prestigeMultiplier *= 2;
-        updateUI();
-        save();
-        alert("Престиж получен! Новый множитель: " + prestigeMultiplier);
+        if (confirm("Сбросить прогресс и получить множитель x2?")) {
+            state.points = 0;
+            state.activeHeroId = 0;
+            prestigeMultiplier *= 2;
+            updateUI();
+            save();
+            alert("Престиж получен! Новый множитель: " + prestigeMultiplier);
+        }
     }
-}
 </script>
 </body>
 </html>

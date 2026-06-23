@@ -6,55 +6,57 @@
     <title>Battle Pass</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #0d0a05; color: white; font-family: sans-serif; }
-        .gradient-gold { background: linear-gradient(to right, #d4af37, #ffe600); }
+        body { background: #0d0a05; color: white; font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="p-5">
+<body class="p-4">
 
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold uppercase text-[#d4af37]">Боевой Пропуск</h1>
-        <a href="index.html" class="text-sm underline text-gray-400">Назад</a>
+    <div class="mb-6">
+        <h1 class="text-3xl font-black italic uppercase text-yellow-400 mb-2">Battle Pass</h1>
+        <div class="bg-[#1a1505] p-4 rounded-2xl border border-yellow-500/30">
+            <div class="flex justify-between text-sm font-bold mb-2">
+                <span>УРОВЕНЬ <span id="lvl-num">1</span></span>
+                <span id="xp-text">0 / 50 XP</span>
+            </div>
+            <div class="w-full h-3 bg-black rounded-full overflow-hidden">
+                <div id="progress-fill" class="h-full bg-yellow-400 transition-all duration-500" style="width: 50%"></div>
+            </div>
+        </div>
     </div>
 
-    <div class="bg-[#111] p-6 rounded-2xl border border-[rgba(212,175,55,0.3)] mb-6">
-        <div class="flex justify-between mb-2">
-            <span>Уровень <span id="lvl-num">1</span></span>
-            <span id="xp-text">0 / 50 XP</span>
-        </div>
-        <div class="w-full h-4 bg-gray-800 rounded-full overflow-hidden">
-            <div id="progress-fill" class="h-full gradient-gold" style="width: 0%"></div>
-        </div>
+    <div class="flex gap-4 overflow-x-auto pb-6 no-scrollbar">
+        <script>
+            // Генерируем 20 уровней
+            for (let i = 1; i <= 20; i++) {
+                document.write(`
+                    <div class="flex-shrink-0 w-24 flex flex-col items-center gap-2">
+                        <div class="w-20 h-20 bg-[#111] border border-gray-700 rounded-xl flex items-center justify-center relative">
+                            <img src="bp${i}.png" class="w-14 h-14 object-contain" onerror="this.src='https://img.icons8.com/color/96/gift.png'">
+                            <span class="absolute top-1 left-1 text-[8px] font-bold text-gray-500">${i}</span>
+                        </div>
+                        <div class="w-20 h-20 bg-gradient-to-b from-[#2a2205] to-[#111] border border-yellow-600/50 rounded-xl flex items-center justify-center">
+                            <img src="bpg${i}.png" class="w-14 h-14 object-contain" onerror="this.src='https://img.icons8.com/fluency/96/crown.png'">
+                        </div>
+                    </div>
+                `);
+            }
+        </script>
     </div>
 
-    <div class="space-y-4">
-        <div class="bg-[#111] p-4 rounded-xl flex items-center justify-between border border-[#222]">
-            <span>Уровень 5: Бонусные звезды</span>
-            <span class="text-[#d4af37]">Locked</span>
-        </div>
-        <div class="bg-[#111] p-4 rounded-xl flex items-center justify-between border border-[#222]">
-            <span>Уровень 10: Скин "Золотой подарок"</span>
-            <span class="text-[#d4af37]">Locked</span>
-        </div>
+    <div class="mt-4 bg-gradient-to-r from-yellow-600 to-yellow-400 p-4 rounded-2xl text-center shadow-lg shadow-yellow-500/20 active:scale-95 transition-all">
+        <p class="font-black text-black uppercase">Купить Premium Pass</p>
+        <p class="text-[10px] text-black/70">Разблокируй все золотые награды</p>
     </div>
 
     <script>
-        // Функция для загрузки прогресса из Supabase
-        async function loadBP() {
-            // userId берется из tg.initDataUnsafe (как в твоих других файлах)
-            // const { data } = await SB.from('battle_pass').select('*').eq('user_id', userId).single();
-            
-            // Тестовые данные (замени на запрос из базы)
-            const level = 1;
-            const xp = 25; 
-            const progress = (xp / 50) * 100;
-
+        // Здесь твоя логика загрузки из Supabase
+        function updateUI(level, xp) {
             document.getElementById('lvl-num').innerText = level;
             document.getElementById('xp-text').innerText = `${xp} / 50 XP`;
-            document.getElementById('progress-fill').style.width = `${progress}%`;
+            document.getElementById('progress-fill').style.width = `${(xp/50)*100}%`;
         }
-
-        loadBP();
     </script>
 </body>
 </html>

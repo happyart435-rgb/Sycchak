@@ -1,87 +1,212 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>StarDrop Nova - Deluxe Edition</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        :root { --neon: #4ade80; --bg-start: #050505; --bg-end: #0a0a0a; --border: rgba(255, 255, 255, 0.1); --trans: all 0.2s ease; }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Montserrat', sans-serif; background-color: var(--bg-start); color: white; overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-        .app-shell { display: flex; flex-direction: column; height: 100vh; max-width: 430px; margin: 0 auto; position: relative; }
-        .header-ui { padding: 40px 20px 10px; text-align: center; }
-        .balance-card { background: rgba(255, 255, 255, 0.05); border-radius: 25px; padding: 20px; border: 1px solid var(--border); }
-        #balance-num { font-size: 38px; font-weight: 900; margin: 0; }
-        .game-core { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; touch-action: none; }
-        #hero-img { width: 280px; z-index: 5; transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); -webkit-user-drag: none; }
-        .tap-anim { transform: scale(0.90); }
-        .drawer-wardrobe { position: absolute; bottom: 0; width: 100%; height: 75%; background: #0a0a0a; border-radius: 40px 40px 0 0; z-index: 100; transform: translateY(100%); transition: transform 0.3s ease; padding: 25px; box-sizing: border-box; border-top: 2px solid var(--neon); pointer-events: none; }
-        .drawer-wardrobe.active { transform: translateY(0); pointer-events: all; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; max-width: 430px; height: 80px; background: rgba(0,0,0,0.95); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--border); z-index: 110; }
-        .nav-item { color: #555; font-size: 12px; font-weight: 800; cursor: pointer; }
-        .nav-item.active { color: var(--neon); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamster Clicker</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#111827;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+
+.container{
+    width:400px;
+    text-align:center;
+}
+
+h1{
+    margin-bottom:20px;
+}
+
+.balance{
+    font-size:32px;
+    font-weight:bold;
+    margin-bottom:20px;
+    color:#ffd700;
+}
+
+.hamster{
+    width:220px;
+    height:220px;
+    border-radius:50%;
+    background:#f59e0b;
+    margin:auto;
+    cursor:pointer;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:90px;
+    user-select:none;
+    transition:.1s;
+    box-shadow:0 0 30px rgba(255,215,0,.4);
+}
+
+.hamster:active{
+    transform:scale(.95);
+}
+
+.stats{
+    margin-top:20px;
+    font-size:20px;
+}
+
+.upgrades{
+    margin-top:25px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:10px;
+    background:#2563eb;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+</style>
 </head>
 <body>
 
-<div class="app-shell">
-    <div class="header-ui">
-        <div class="balance-card">
-            <h1 id="balance-num">0</h1>
+<div class="container">
+
+    <h1>🐹 Hamster Clicker</h1>
+
+    <div class="balance">
+        💰 <span id="coins">0</span>
+    </div>
+
+    <div class="hamster" id="hamster">
+        🐹
+    </div>
+
+    <div class="stats">
+        За клик: <span id="perClick">1</span>
+    </div>
+
+    <div class="upgrades">
+        <button onclick="buyPower()">
+            ⚡ Улучшить клик
+            (<span id="powerCost">50</span>)
+        </button>
+
+        <button onclick="buyAuto()">
+            🤖 Автодоход
+            (<span id="autoCost">100</span>)
+        </button>
+
+        <div style="margin-top:15px;">
+            Автодоход: <span id="autoIncome">0</span>/сек
         </div>
     </div>
 
-    <div class="game-core" id="tap-zone">
-        <img id="hero-img" src="https://cdn-icons-png.flaticon.com/512/1144/1144760.png" draggable="false">
-    </div>
-
-    <div class="nav-bar">
-        <div class="nav-item" onclick="openPanel('market-panel')">МАРКЕТ</div>
-        <div class="nav-item active" onclick="closeAllPanels()">ГЛАВНАЯ</div>
-        <div class="nav-item" onclick="openPanel('leaderboard-panel')">ТОП</div>
-    </div>
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-    const supabase = window.supabase.createClient('https://ypvvoqbvzfmirprevazq.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzM3NTgsImV4cCI6MjA5NzQ0OTc1OH0.bt4iVMEX0JtYzJxW7gtRxWEOz0eXPIOautw7_FALhkc');
 
-    let state = { points: 0, clickPower: 1 };
-    const heroImg = document.getElementById('hero-img');
-    const balanceDisplay = document.getElementById('balance-num');
+let coins = Number(localStorage.getItem("coins")) || 0;
+let perClick = Number(localStorage.getItem("perClick")) || 1;
+let powerCost = Number(localStorage.getItem("powerCost")) || 50;
 
-    // Функция обработки клика
-    function performTap(e) {
-        e.preventDefault();
-        
-        // Логика начисления
-        state.points += state.clickPower;
-        balanceDisplay.innerText = Math.floor(state.points).toLocaleString();
-        
-        // Анимация
-        heroImg.classList.add('tap-anim');
-        setTimeout(() => heroImg.classList.remove('tap-anim'), 100);
+let autoIncome = Number(localStorage.getItem("autoIncome")) || 0;
+let autoCost = Number(localStorage.getItem("autoCost")) || 100;
 
-        // Сохранение (оптимизировано, не при каждом клике)
-        if (state.points % 10 === 0) saveToDB();
+function save(){
+    localStorage.setItem("coins", coins);
+    localStorage.setItem("perClick", perClick);
+    localStorage.setItem("powerCost", powerCost);
+    localStorage.setItem("autoIncome", autoIncome);
+    localStorage.setItem("autoCost", autoCost);
+}
+
+function updateUI(){
+    document.getElementById("coins").innerText =
+        Math.floor(coins);
+
+    document.getElementById("perClick").innerText =
+        perClick;
+
+    document.getElementById("powerCost").innerText =
+        powerCost;
+
+    document.getElementById("autoIncome").innerText =
+        autoIncome;
+
+    document.getElementById("autoCost").innerText =
+        autoCost;
+}
+
+document.getElementById("hamster").addEventListener("click", ()=>{
+
+    coins += perClick;
+
+    updateUI();
+    save();
+
+});
+
+function buyPower(){
+
+    if(coins < powerCost){
+        alert("Недостаточно монет!");
+        return;
     }
 
-    // Используем pointerdown для поддержки всех устройств
-    document.getElementById('tap-zone').addEventListener('pointerdown', performTap, { passive: false });
+    coins -= powerCost;
+    perClick += 1;
 
-    async function saveToDB() {
-        const userId = tg.initDataUnsafe?.user?.id || 123;
-        await supabase.from('players').upsert({ user_id: userId, points: state.points });
+    powerCost = Math.floor(powerCost * 1.7);
+
+    updateUI();
+    save();
+}
+
+function buyAuto(){
+
+    if(coins < autoCost){
+        alert("Недостаточно монет!");
+        return;
     }
 
-    function openPanel(id) { document.querySelectorAll('.drawer-wardrobe').forEach(d => d.classList.remove('active')); document.getElementById(id)?.classList.add('active'); }
-    function closeAllPanels() { document.querySelectorAll('.drawer-wardrobe').forEach(d => d.classList.remove('active')); }
-    
-    // Инициализация
-    tg.ready();
+    coins -= autoCost;
+    autoIncome += 1;
+
+    autoCost = Math.floor(autoCost * 1.8);
+
+    updateUI();
+    save();
+}
+
+setInterval(()=>{
+
+    coins += autoIncome;
+
+    updateUI();
+    save();
+
+},1000);
+
+updateUI();
+
 </script>
+
 </body>
 </html>

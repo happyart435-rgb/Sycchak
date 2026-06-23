@@ -165,7 +165,26 @@
         starLabel.innerText = Math.floor(data?.stars || 0);
     }
 
-    function saveAndExit() {
+async function saveAndExit() {
+    // Если заработали звезды, пробуем сохранить
+    if (userId && starsEarned > 0) {
+        try {
+            // 1. Получаем текущий баланс
+            const { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
+            const currentTotal = data?.stars || 0;
+            
+            // 2. Обновляем базу
+            await SB.from('users')
+                .update({ stars: currentTotal + starsEarned })
+                .eq('user_id', userId);
+                
+            console.log("Сохранено:", currentTotal + starsEarned);
+        } catch (e) {
+            console.error("Ошибка сохранения:", e);
+        }
+    }
+    
+    // После сохранения (или если звезд нет) уходим в меню
     window.location.href = 'index.html';
 }
 

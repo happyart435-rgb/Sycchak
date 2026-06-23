@@ -6,6 +6,7 @@
     <title>StarDrop Nova - Deluxe Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --neon: #4ade80;
@@ -338,59 +339,69 @@
         lastUnix: Date.now()
     };
 
-    async function loadFromDB() {
-        const userId = tg.initDataUnsafe?.user?.id;
-        if (!userId) return;
-        try {
-            const res = await fetch(`${BACKEND_URL}/get_balance/${userId}?t=${Date.now()}`);
-            const data = await res.json();
-            if (data) {
-                state.points = parseInt(data.points || 0);
-                state.energy = parseInt(data.energy || 1000);
-                state.activeHeroId = parseInt(data.active_hero_id || 0);
-                updateUI();
-                applyHeroVisuals();
-            }
-        } catch (e) { console.error("Sync Error"); }
-    }
+async function loadFromDB() {
+    const userId = tg.initDataUnsafe?.user?.id;
+    if (!userId) return;
 
-    async function saveToDB() {
-        const userId = tg.initDataUnsafe?.user?.id;
-        if (!userId) return;
-        try {
-            await fetch(`${BACKEND_URL}/update_balance`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_id: userId,
-                    points: Math.floor(state.points),
-                    energy: Math.floor(state.energy),
-                    active_hero_id: state.activeHeroId
-                })
-            });
-        } catch (e) { console.error("Save Error"); }
-    }
+    const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-    async function fetchLeaderboard() {
-        const list = document.getElementById('leaderboard-list');
-        list.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.5;">Ищем легенд...</div>';
-        try {
-            // Исправлен путь к лидерборду
-            const res = await fetch(`${BACKEND_URL}/get_leaders`);
-            const topUsers = await res.json();
-            list.innerHTML = '';
-            topUsers.forEach((user, index) => {
-                const isMe = user.user_id == tg.initDataUnsafe?.user?.id;
-                list.innerHTML += `
-                    <div class="lb-row ${isMe ? 'me' : ''}">
-                        <div class="lb-rank">${index + 1}</div>
-                        <div class="lb-name">${user.username || 'Anonymous'}</div>
-                        <div class="lb-points">${Math.floor(user.points).toLocaleString()}</div>
-                    </div>
-                `;
-            });
-        } catch (e) { list.innerHTML = '<div style="text-align:center; padding:30px; color:red;">Ошибка загрузки топа</div>'; }
+    if (data) {
+        state.points = parseInt(data.points);
+        state.energy = parseInt(data.energy);
+        state.activeHeroId = parseInt(data.active_hero_id);
+        // Если ты хранишь уровни рынка в базе, добавь их тоже:
+        // state.marketLevels = data.market_levels || {}; 
+        updateUI();
+        applyHeroVisuals();
     }
+}
+
+async function saveToDB() {
+    const userId = tg.initDataUnsafe?.user?.id;
+    if (!userId) return;
+
+    // Используем upsert: если юзер есть - обновит, если нет - создаст
+    const { error } = await supabase
+        .from('players')
+        .upsert({
+            user_id: userId,
+            points: Math.floor(state.points),
+            energy: Math.floor(state.energy),
+            active_hero_id: state.activeHeroId
+            // market_levels: state.marketLevels
+        });
+    
+    if (error) console.error("Ошибка сохранения:", error);
+}
+
+async function fetchLeaderboard() {
+    const list = document.getElementById('leaderboard-list');
+    list.innerHTML = '<div style="text-align:center; padding:30px;">Загрузка топа...</div>';
+    
+    const { data, error } = await supabase
+        .from('players')
+        .select('user_id, points')
+        .order('points', { ascending: false })
+        .limit(10);
+
+    if (data) {
+        list.innerHTML = '';
+        data.forEach((user, index) => {
+            const isMe = user.user_id == tg.initDataUnsafe?.user?.id;
+            list.innerHTML += `
+                <div class="lb-row ${isMe ? 'me' : ''}">
+                    <div class="lb-rank">${index + 1}</div>
+                    <div class="lb-name">Player ${user.user_id}</div>
+                    <div class="lb-points">${Math.floor(user.points).toLocaleString()}</div>
+                </div>
+            `;
+        });
+    }
+}
 
     async function init() {
         const saved = localStorage.getItem('nova_engine_save');

@@ -386,7 +386,7 @@
         try {
             const res = await fetch(`${BACKEND_URL}/get_balance/${userId}?t=${Date.now()}`);
             const data = await res.json();
-            if (data) {
+            if (data && !data.error) {
                 state.points = parseInt(data.points || 0);
                 state.energy = parseInt(data.energy || 1000);
                 state.maxEnergy = parseInt(data.max_energy || 1000);
@@ -399,7 +399,7 @@
                 applyHeroVisuals();
             }
         } catch (e) { 
-            console.error("Ошибка синхронизации с бэкендом при загрузке"); 
+            console.error("Ошибка синхронизации с бэкендом при загрузке:", e); 
         }
     }
 
@@ -425,7 +425,7 @@
                 })
             });
         } catch (e) { 
-            console.error("Ошибка сохранения на бэкенд"); 
+            console.error("Ошибка сохранения на бэкенд:", e); 
         }
     }
 
@@ -460,8 +460,8 @@
             state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
         }
         
-        const heroImg = document.getElementById('hero-img');
-        heroImg.addEventListener('pointerdown', (e) => {
+        const heroImgEl = document.getElementById('hero-img');
+        heroImgEl.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             handleTapLogic(e.clientX, e.clientY);
         });
@@ -478,7 +478,7 @@
                 updateUI();
             }
         }, 1000);
-        setInterval(save, 15000); // Раз в 15 секунд бэкапим в базу
+        setInterval(triggerSaveProcess, 15000); // Раз в 15 секунд бэкапим в базу
     }
 
     const tapZone = document.getElementById('tap-zone');
@@ -514,6 +514,7 @@
         updateUI();
         
         // Кэшируем локально при каждом клике, чтобы не терять прогресс
+        state.lastUnix = Date.now();
         localStorage.setItem('nova_engine_save', JSON.stringify(state));
     }
 
@@ -596,7 +597,7 @@
             
             renderMarket(); 
             updateUI(); 
-            save(); // При покупке улучшения сразу сохраняем в БД
+            triggerSaveProcess(); // При покупке улучшения сразу сохраняем в БД
         }
     }
 
@@ -627,7 +628,7 @@
             applyHeroVisuals(); 
             renderSkins(); 
             updateUI(); 
-            save(); // Сохраняем смену скина в БД
+            triggerSaveProcess(); // Сохраняем смену скина в БД
             return;
         }
 
@@ -651,7 +652,7 @@
                     applyHeroVisuals();
                     renderSkins();
                     updateUI();
-                    save(); // Сохраняем покупку и сброс в БД
+                    triggerSaveProcess(); // Сохраняем покупку и сброс в БД
                 }
             });
         }
@@ -690,7 +691,7 @@
         }
     }
 
-    function save() {
+    function triggerSaveProcess() {
         state.lastUnix = Date.now();
         localStorage.setItem('nova_engine_save', JSON.stringify(state));
         saveToDB(); 
@@ -699,9 +700,9 @@
     async function safeGoBack() {
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
         await saveToDB();
-        window.location.href = 'index.html';
     }
 
+    // Запускаем инициализацию игры при загрузке страницы
     window.onload = init;
 </script>
 </body>

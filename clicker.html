@@ -331,43 +331,43 @@
 </div>
 
 <script>
-    
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://stars-drop.vercel.app/api';
+    // Твой актуальный URL бэкенда на Vercel
+    const BACKEND_URL = 'https://sycchak.vercel.app/api'; 
     tg.expand();
 
     const heroes = [
-    { id: 0, x: 1, price: 0, img: "img/Новая папка (3)/pepe1.png", color: "#facc15", bg: "#1a1605" },
-    { id: 1, x: 3, price: 750000, img: "img/Новая папка (3)/pepe2.png", color: "#facc15", bg: "#2a250f" },
-    { id: 2, x: 8, price: 2500000, img: "img/Новая папка (3)/pepe3.png", color: "#a855f7", bg: "#251635" },
-    { id: 3, x: 15, price: 8000000, img: "img/Новая папка (3)/pepe4.png", color: "#3b82f6", bg: "#162235" },
-    { id: 4, x: 30, price: 30000000, img: "img/Новая папка (3)/pepe5.png", color: "#eab308", bg: "#352e16" },
-    { id: 5, x: 60, price: 150000000, img: "img/Новая папка (3)/pepe6.png", color: "#ef4444", bg: "#351616" },
-    { id: 6, x: 120, price: 800000000, img: "img/hero.png", color: "#60a5fa", bg: "#162235" }
-];
+        { id: 0, x: 1, price: 0, img: "img/Новая папка (3)/pepe1.png", color: "#facc15", bg: "#1a1605" },
+        { id: 1, x: 3, price: 750000, img: "img/Новая папка (3)/pepe2.png", color: "#facc15", bg: "#2a250f" },
+        { id: 2, x: 8, price: 2500000, img: "img/Новая папка (3)/pepe3.png", color: "#a855f7", bg: "#251635" },
+        { id: 3, x: 15, price: 8000000, img: "img/Новая папка (3)/pepe4.png", color: "#3b82f6", bg: "#162235" },
+        { id: 4, x: 30, price: 30000000, img: "img/Новая папка (3)/pepe5.png", color: "#eab308", bg: "#352e16" },
+        { id: 5, x: 60, price: 150000000, img: "img/Новая папка (3)/pepe6.png", color: "#ef4444", bg: "#351616" },
+        { id: 6, x: 120, price: 800000000, img: "img/hero.png", color: "#60a5fa", bg: "#162235" }
+    ];
 
     const marketData = [
-    { id: 0, name: "Курсор", baseAdd: 1, basePrice: 50, icon: "🖱️", type: "click" },
-    { id: 1, name: "Клик-бот", baseAdd: 2, basePrice: 80, icon: "🤖", type: "click" },
-    { id: 2, name: "Прокси-сервер", baseAdd: 5, basePrice: 120, icon: "📡", type: "click" },
-    { id: 3, name: "SSD-накопитель", baseAdd: 10, basePrice: 200, icon: "💾", type: "click" },
-    { id: 4, name: "Блокчейн-узел", baseAdd: 20, basePrice: 350, icon: "⛓️", type: "click" },
-    { id: 5, name: "Смарт-контракт", baseAdd: 40, basePrice: 600, icon: "📜", type: "click" },
-    { id: 6, name: "Батарейка", baseAdd: 500, basePrice: 1000, icon: "🔋", type: "energy" },
-    { id: 7, name: "Видеокарта RTX", baseAdd: 150, basePrice: 1800, icon: "🎮", type: "click" },
-    { id: 8, name: "Серверная стойка", baseAdd: 300, basePrice: 3000, icon: "🗄️", type: "click" },
-    { id: 9, name: "Холодный кошелек", baseAdd: 600, basePrice: 5000, icon: "🔐", type: "click" },
-    { id: 10, name: "Ликвидный пул", baseAdd: 1200, basePrice: 8500, icon: "💧", type: "click" },
-    { id: 11, name: "DAO-голосование", baseAdd: 2500, basePrice: 14000, icon: "🗳️", type: "click" },
-    { id: 12, name: "Трейдинг-бот", baseAdd: 5000, basePrice: 25000, icon: "📈", type: "click" },
-    { id: 13, name: "Виртуальный офис", baseAdd: 10000, basePrice: 45000, icon: "🏢", type: "click" },
-    { id: 14, name: "Биржевой терминал", baseAdd: 20000, basePrice: 80000, icon: "🖥️", type: "click" },
-    { id: 15, name: "Кибер-защита", baseAdd: 40000, basePrice: 150000, icon: "🛡️", type: "click" },
-    { id: 16, name: "Облачный кластер", baseAdd: 80000, basePrice: 300000, icon: "☁️", type: "click" },
-    { id: 17, name: "NFT-Маркетплейс", baseAdd: 160000, basePrice: 600000, icon: "🖼️", type: "click" },
-    { id: 18, name: "Квантовый процессор", baseAdd: 350000, basePrice: 1200000, icon: "⚛️", type: "click" },
-    { id: 19, name: "Мастер-нода Nova", baseAdd: 800000, basePrice: 2500000, icon: "👑", type: "click" }
-];
+        { id: 0, name: "Курсор", baseAdd: 1, basePrice: 50, icon: "🖱️", type: "click" },
+        { id: 1, name: "Клик-бот", baseAdd: 2, basePrice: 80, icon: "🤖", type: "click" },
+        { id: 2, name: "Прокси-сервер", baseAdd: 5, basePrice: 120, icon: "📡", type: "click" },
+        { id: 3, name: "SSD-накопитель", baseAdd: 10, basePrice: 200, icon: "💾", type: "click" },
+        { id: 4, name: "Блокчейн-узел", baseAdd: 20, basePrice: 350, icon: "⛓️", type: "click" },
+        { id: 5, name: "Смарт-контракт", baseAdd: 40, basePrice: 600, icon: "📜", type: "click" },
+        { id: 6, name: "Батарейка", baseAdd: 500, basePrice: 1000, icon: "🔋", type: "energy" },
+        { id: 7, name: "Видеокарта RTX", baseAdd: 150, basePrice: 1800, icon: "🎮", type: "click" },
+        { id: 8, name: "Серверная стойка", baseAdd: 300, basePrice: 3000, icon: "🗄️", type: "click" },
+        { id: 9, name: "Холодный кошелек", baseAdd: 600, basePrice: 5000, icon: "🔐", type: "click" },
+        { id: 10, name: "Ликвидный пул", baseAdd: 1200, basePrice: 8500, icon: "💧", type: "click" },
+        { id: 11, name: "DAO-голосование", baseAdd: 2500, basePrice: 14000, icon: "🗳️", type: "click" },
+        { id: 12, name: "Трейдинг-бот", baseAdd: 5000, basePrice: 25000, icon: "📈", type: "click" },
+        { id: 13, name: "Виртуальный офис", baseAdd: 10000, basePrice: 45000, icon: "🏢", type: "click" },
+        { id: 14, name: "Биржевой терминал", baseAdd: 20000, basePrice: 80000, icon: "🖥️", type: "click" },
+        { id: 15, name: "Кибер-защита", baseAdd: 40000, basePrice: 150000, icon: "🛡️", type: "click" },
+        { id: 16, name: "Облачный кластер", baseAdd: 80000, basePrice: 300000, icon: "☁️", type: "click" },
+        { id: 17, name: "NFT-Маркетплейс", baseAdd: 160000, basePrice: 600000, icon: "🖼️", type: "click" },
+        { id: 18, name: "Квантовый процессор", baseAdd: 350000, basePrice: 1200000, icon: "⚛️", type: "click" },
+        { id: 19, name: "Мастер-нода Nova", baseAdd: 800000, basePrice: 2500000, icon: "👑", type: "click" }
+    ];
 
     let state = {
         points: 0,
@@ -380,37 +380,53 @@
         lastUnix: Date.now()
     };
 
+    // 1. ЗАГРУЗКА ВСЕХ ДАННЫХ ИЗ ТВОЕГО БЭКЕНДА
     async function loadFromDB() {
-        const userId = tg.initDataUnsafe?.user?.id;
-        if (!userId) return;
+        const userId = tg.initDataUnsafe?.user?.id || 12345; 
         try {
             const res = await fetch(`${BACKEND_URL}/get_balance/${userId}?t=${Date.now()}`);
             const data = await res.json();
             if (data) {
                 state.points = parseInt(data.points || 0);
                 state.energy = parseInt(data.energy || 1000);
+                state.maxEnergy = parseInt(data.max_energy || 1000);
+                state.clickPower = parseInt(data.click_power || 1);
                 state.activeHeroId = parseInt(data.active_hero_id || 0);
+                state.ownedHeroes = Array.isArray(data.owned_heroes) ? data.owned_heroes : [0];
+                state.marketLevels = data.market_levels || {};
+                
                 updateUI();
                 applyHeroVisuals();
             }
-        } catch (e) { console.error("Sync Error"); }
+        } catch (e) { 
+            console.error("Ошибка синхронизации с бэкендом при загрузке"); 
+        }
     }
 
+    // 2. СОХРАНЕНИЕ СОВЕРШЕННО ВСЕХ ДАННЫХ НА БЭКЕНД
     async function saveToDB() {
-        const userId = tg.initDataUnsafe?.user?.id;
-        if (!userId) return;
+        const user = tg.initDataUnsafe?.user;
+        const userId = user?.id || 12345;
+        const username = user?.username || 'Anonymous';
         try {
             await fetch(`${BACKEND_URL}/update_balance`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     user_id: userId,
+                    username: username,
                     points: Math.floor(state.points),
                     energy: Math.floor(state.energy),
-                    active_hero_id: state.activeHeroId
+                    max_energy: state.maxEnergy,
+                    click_power: state.clickPower,
+                    active_hero_id: state.activeHeroId,
+                    owned_heroes: state.ownedHeroes,  
+                    market_levels: state.marketLevels 
                 })
             });
-        } catch (e) { console.error("Save Error"); }
+        } catch (e) { 
+            console.error("Ошибка сохранения на бэкенд"); 
+        }
     }
 
     async function fetchLeaderboard() {
@@ -421,7 +437,7 @@
             const topUsers = await res.json();
             list.innerHTML = '';
             topUsers.forEach((user, index) => {
-                const isMe = user.user_id == tg.initDataUnsafe?.user?.id;
+                const isMe = user.user_id == (tg.initDataUnsafe?.user?.id || 12345);
                 list.innerHTML += `
                     <div class="lb-row ${isMe ? 'me' : ''}">
                         <div class="lb-rank">${index + 1}</div>
@@ -430,10 +446,12 @@
                     </div>
                 `;
             });
-        } catch (e) { list.innerHTML = '<div style="text-align:center; padding:30px; color:red;">Ошибка загрузки топа</div>'; }
+        } catch (e) { 
+            list.innerHTML = '<div style="text-align:center; padding:30px; color:red;">Ошибка загрузки топа</div>'; 
+        }
     }
 
-   async function init() {
+    async function init() {
         const saved = localStorage.getItem('nova_engine_save');
         if (saved) {
             const parsed = JSON.parse(saved);
@@ -442,7 +460,6 @@
             state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
         }
         
-        // ДОБАВЛЕНО: привязка обработчика клика к картинке
         const heroImg = document.getElementById('hero-img');
         heroImg.addEventListener('pointerdown', (e) => {
             e.preventDefault();
@@ -461,60 +478,59 @@
                 updateUI();
             }
         }, 1000);
-        setInterval(save, 15000); 
+        setInterval(save, 15000); // Раз в 15 секунд бэкапим в базу
     }
 
     const tapZone = document.getElementById('tap-zone');
     const heroImg = document.getElementById('hero-img');
     
-
     let lastTapTime = 0;
-let isOverheated = false;
+    let isOverheated = false;
 
-function handleTapLogic(x, y) {
-    const now = Date.now();
-    const timeDiff = now - lastTapTime;
-    
-    // Если кликают чаще 100мс — включаем перегрев
-    if (timeDiff < 1) {
-        triggerOverheat();
+    function handleTapLogic(x, y) {
+        const now = Date.now();
+        const timeDiff = now - lastTapTime;
+        
+        if (timeDiff < 41) {
+            triggerOverheat();
+        }
+        lastTapTime = now;
+
+        const energyCost = isOverheated ? 50 : 1;
+        if (state.energy < energyCost) return;
+
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+        heroImg.classList.add('tap-anim');
+        setTimeout(() => heroImg.classList.remove('tap-anim'), 50);
+        
+        const hero = heroes.find(h => h.id === state.activeHeroId);
+        const profit = state.clickPower * (hero ? hero.x : 1);
+        
+        state.points += profit;
+        state.energy -= energyCost;
+        
+        showPop(x, y, profit);
+        updateUI();
+        
+        // Кэшируем локально при каждом клике, чтобы не терять прогресс
+        localStorage.setItem('nova_engine_save', JSON.stringify(state));
     }
-    lastTapTime = now;
 
-    // Расход энергии (в 50 раз быстрее при перегреве)
-    const energyCost = isOverheated ? 50 : 1;
-    if (state.energy < energyCost) return;
-
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-
-    heroImg.classList.add('tap-anim');
-    setTimeout(() => heroImg.classList.remove('tap-anim'), 50);
-    
-    const hero = heroes.find(h => h.id === state.activeHeroId);
-    const profit = state.clickPower * (hero ? hero.x : 1);
-    
-    state.points += profit;
-    state.energy -= energyCost;
-    
-    showPop(x, y, profit);
-    updateUI();
-}
-
-function triggerOverheat() {
-    if (isOverheated) return;
-    isOverheated = true;
-    
-    const msg = document.getElementById('overheat-msg');
-    document.body.classList.add('overheat-flash');
-    msg.style.opacity = '1';
-    
-    // Выключаем перегрев через 5 секунд
-    setTimeout(() => {
-        isOverheated = false;
-        document.body.classList.remove('overheat-flash');
-        msg.style.opacity = '0';
-    }, 5000);
-}
+    function triggerOverheat() {
+        if (isOverheated) return;
+        isOverheated = true;
+        
+        const msg = document.getElementById('overheat-msg');
+        document.body.classList.add('overheat-flash');
+        msg.style.opacity = '1';
+        
+        setTimeout(() => {
+            isOverheated = false;
+            document.body.classList.remove('overheat-flash');
+            msg.style.opacity = '0';
+        }, 5000);
+    }
 
     function showPop(x, y, val) {
         const p = document.createElement('div');
@@ -526,64 +542,63 @@ function triggerOverheat() {
     }
 
     function renderMarket() {
-    const container = document.getElementById('market-list');
-    container.innerHTML = '';
-    
-    marketData.forEach((item, index) => {
-        const lvl = state.marketLevels[item.id] || 0;
-        const maxLvl = item.type === 'energy' ? 5 : 15; // Лимиты уровней
-        const isMax = lvl >= maxLvl;
+        const container = document.getElementById('market-list');
+        container.innerHTML = '';
         
-        const price = isMax ? 0 : Math.floor(item.basePrice * Math.pow(1.6, lvl));
-        
-        // Определяем текст бонуса
-        let bonusText = '';
-        if (item.type === 'click') {
-            bonusText = '+' + (item.baseAdd * (lvl + 1)) + ' к клику';
-        } else {
-            bonusText = '+' + item.baseAdd + ' к макс. энергии';
-        }
+        marketData.forEach((item, index) => {
+            const lvl = state.marketLevels[item.id] || 0;
+            const maxLvl = item.type === 'energy' ? 5 : 15;
+            const isMax = lvl >= maxLvl;
+            
+            const price = isMax ? 0 : Math.floor(item.basePrice * Math.pow(1.6, lvl));
+            
+            let bonusText = '';
+            if (item.type === 'click') {
+                bonusText = '+' + (item.baseAdd * (lvl + 1)) + ' к клику';
+            } else {
+                bonusText = '+' + item.baseAdd + ' к макс. энергии';
+            }
 
-        const isLocked = index > 0 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
-        
-        container.innerHTML += `
-            <div class="card-item ${isLocked ? 'locked' : ''}">
-                <span class="card-icon">${item.icon}</span>
-                <div class="card-title">${isLocked ? '???' : item.name}</div>
-                <div class="card-desc">${isLocked ? '????' : (isMax ? 'УРОВЕНЬ МАКСИМАЛЕН' : bonusText)}</div>
-                <button class="btn-action btn-buy" 
-                    ${(isLocked || state.points < price || isMax) ? 'disabled' : ''} 
-                    onclick="buyMarketItem(${item.id})">
-                    ${isMax ? 'МАКС' : price.toLocaleString()}
-                </button>
-            </div>`;
-    });
-}
+            const isLocked = index > 0 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
+            
+            container.innerHTML += `
+                <div class="card-item ${isLocked ? 'locked' : ''}">
+                    <span class="card-icon">${item.icon}</span>
+                    <div class="card-title">${isLocked ? '???' : item.name}</div>
+                    <div class="card-desc">${isLocked ? '????' : (isMax ? 'УРОВЕНЬ МАКСИМАЛЕН' : bonusText)}</div>
+                    <button class="btn-action btn-buy" 
+                        ${(isLocked || state.points < price || isMax) ? 'disabled' : ''} 
+                        onclick="buyMarketItem(${item.id})">
+                        ${isMax ? 'МАКС' : price.toLocaleString()}
+                    </button>
+                </div>`;
+        });
+    }
 
     window.buyMarketItem = function(id) {
-    const item = marketData.find(i => i.id === id);
-    const lvl = state.marketLevels[item.id] || 0;
-    const maxLvl = item.type === 'energy' ? 5 : 15;
-    
-    if (lvl >= maxLvl) return; // Защита от превышения уровня
-    
-    const price = Math.floor(item.basePrice * Math.pow(1.6, lvl));
-    if (state.points >= price) {
-        state.points -= price;
-        state.marketLevels[id] = lvl + 1;
+        const item = marketData.find(i => i.id === id);
+        const lvl = state.marketLevels[item.id] || 0;
+        const maxLvl = item.type === 'energy' ? 5 : 15;
         
-        if (item.type === 'click') {
-            state.clickPower += item.baseAdd;
-        } else if (item.type === 'energy') {
-            state.maxEnergy += item.baseAdd;
-            state.energy += item.baseAdd; 
+        if (lvl >= maxLvl) return;
+        
+        const price = Math.floor(item.basePrice * Math.pow(1.6, lvl));
+        if (state.points >= price) {
+            state.points -= price;
+            state.marketLevels[id] = lvl + 1;
+            
+            if (item.type === 'click') {
+                state.clickPower += item.baseAdd;
+            } else if (item.type === 'energy') {
+                state.maxEnergy += item.baseAdd;
+                state.energy += item.baseAdd; 
+            }
+            
+            renderMarket(); 
+            updateUI(); 
+            save(); // При покупке улучшения сразу сохраняем в БД
         }
-        
-        renderMarket(); 
-        updateUI(); 
-        save();
     }
-}
 
     function renderSkins() {
         const container = document.getElementById('skin-list');
@@ -605,46 +620,42 @@ function triggerOverheat() {
     }
 
     window.handleHero = function(id) {
-    const h = heroes.find(x => x.id === id);
-    
-    // Если скин уже куплен, просто меняем его
-    if (state.ownedHeroes.includes(id)) {
-        state.activeHeroId = id;
-        applyHeroVisuals(); 
-        renderSkins(); 
-        updateUI(); 
-        save();
-        return;
-    }
+        const h = heroes.find(x => x.id === id);
+        
+        if (state.ownedHeroes.includes(id)) {
+            state.activeHeroId = id;
+            applyHeroVisuals(); 
+            renderSkins(); 
+            updateUI(); 
+            save(); // Сохраняем смену скина в БД
+            return;
+        }
 
-    // Если скин не куплен, показываем подтверждение
-    if (state.points >= h.price) {
-        tg.showPopup({
-            title: 'Покупка скина',
-            message: `Вы уверены? При покупке этого скина ваш баланс и улучшения сбросятся до нуля, но вы получите множитель x${h.x} навсегда!`,
-            buttons: [
-                {id: 'buy', type: 'destructive', text: 'Купить и сбросить'},
-                {type: 'cancel', text: 'Отмена'}
-            ]
-        }, (buttonId) => {
-            if (buttonId === 'buy') {
-                // Логика сброса
-                state.points = 0;
-                state.marketLevels = {}; // Сброс улучшений маркета
-                state.clickPower = 1;    // Сброс мощности клика до базовой
-                
-                // Добавляем скин
-                state.ownedHeroes.push(id);
-                state.activeHeroId = id;
-                
-                applyHeroVisuals();
-                renderSkins();
-                updateUI();
-                save();
-            }
-        });
+        if (state.points >= h.price) {
+            tg.showPopup({
+                title: 'Покупка скина',
+                message: `Вы уверены? При покупке этого скина ваш баланс и улучшения сбросятся до нуля, но вы получите множитель x${h.x} навсегда!`,
+                buttons: [
+                    {id: 'buy', type: 'destructive', text: 'Купить и сбросить'},
+                    {type: 'cancel', text: 'Отмена'}
+                ]
+            }, (buttonId) => {
+                if (buttonId === 'buy') {
+                    state.points = 0;
+                    state.marketLevels = {};
+                    state.clickPower = 1;
+                    
+                    state.ownedHeroes.push(id);
+                    state.activeHeroId = id;
+                    
+                    applyHeroVisuals();
+                    renderSkins();
+                    updateUI();
+                    save(); // Сохраняем покупку и сброс в БД
+                }
+            });
+        }
     }
-}
 
     function openPanel(id, navEl) {
         document.querySelectorAll('.drawer-wardrobe').forEach(d => d.classList.remove('active'));
@@ -682,7 +693,7 @@ function triggerOverheat() {
     function save() {
         state.lastUnix = Date.now();
         localStorage.setItem('nova_engine_save', JSON.stringify(state));
-        saveToDB();
+        saveToDB(); 
     }
 
     async function safeGoBack() {

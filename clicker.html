@@ -632,46 +632,44 @@
     }
 
 window.handleHero = function(id) {
-    const h = heroes.find(x => x.id === id);
-    
-    // Если скин уже куплен, просто меняем его
-    if (state.ownedHeroes.includes(id)) {
-        state.activeHeroId = id;
-        applyHeroVisuals(); 
-        renderSkins(); 
-        updateUI(); 
-        save();
-        return;
-    }
+        const h = heroes.find(x => x.id === id);
+        
+        if (state.ownedHeroes.includes(id)) {
+            state.activeHeroId = id;
+            applyHeroVisuals(); 
+            renderSkins(); 
+            updateUI(); 
+            triggerSaveProcess();
+            return;
+        }
 
-    // Если скин не куплен, показываем подтверждение
-    if (state.points >= h.price) {
-        tg.showPopup({
-            title: 'Покупка скина',
-            message: Вы уверены? При покупке этого скина ваш баланс и улучшения сбросятся до нуля, но вы получите множитель x${h.x} навсегда!,
-            buttons: [
-                {id: 'buy', type: 'destructive', text: 'Купить и сбросить'},
-                {type: 'cancel', text: 'Отмена'}
-            ]
-        }, (buttonId) => {
-            if (buttonId === 'buy') {
-                // Логика сброса
-                state.points = 0;
-                state.marketLevels = {}; // Сброс улучшений маркета
-                state.clickPower = 1;    // Сброс мощности клика до базовой
-                
-                // Добавляем скин
-                state.ownedHeroes.push(id);
-                state.activeHeroId = id;
-                
-                applyHeroVisuals();
-                renderSkins();
-                updateUI();
-                save();
-            }
-        });
+        if (state.points >= h.price) {
+            tg.showPopup({
+                title: 'Покупка скина (РЕБЁРТХ)',
+                message: `Вы уверены? При покупке этого скина ваш баланс и улучшения сбросятся до нуля, но вы получите множитель x${h.x} навсегда!`,
+                buttons: [
+                    {id: 'buy', type: 'destructive', text: 'Купить и сбросить'},
+                    {type: 'cancel', text: 'Отмена'}
+                ]
+            }, (buttonId) => {
+                if (buttonId === 'buy') {
+                    state.points = 0;
+                    state.marketLevels = {}; 
+                    state.clickPower = 1;    
+                    state.maxEnergy = 1000;  // Сбрасываем бак до базы
+                    state.energy = 1000;     // Заливаем фулл
+                    
+                    state.ownedHeroes.push(id);
+                    state.activeHeroId = id;
+                    
+                    applyHeroVisuals();
+                    renderSkins();
+                    updateUI();
+                    triggerSaveProcess();
+                }
+            });
+        }
     }
-}
 
     async function goBackWithSave() {
         localStorage.setItem('nova_engine_save', JSON.stringify(state));

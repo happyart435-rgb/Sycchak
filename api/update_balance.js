@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-client';
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 export default async function handler(req, res) {
-    // Разрешаем кросс-доменные запросы (CORS)
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -26,17 +25,17 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Missing user_id' });
         }
 
-        // Upsert: если юзера нет — создаст, если есть — обновит данные
+        // УБРАЛИ BigInt(user_id) — передаем чистую строку. Supabase поймет её сам.
         const { data, error } = await supabase
             .from('users_state')
             .upsert({
-                user_id: BigInt(user_id),
+                user_id: user_id.toString(), 
                 username: username || 'Anonymous',
-                points: points || 0,
-                energy: energy || 0,
-                max_energy: max_energy || 1000,
-                click_power: click_power || 1,
-                active_hero_id: active_hero_id || 0,
+                points: Number(points) || 0,
+                energy: Number(energy) || 0,
+                max_energy: Number(max_energy) || 1000,
+                click_power: Number(click_power) || 1,
+                active_hero_id: Number(active_hero_id) || 0,
                 owned_heroes: owned_heroes || [0],
                 market_levels: market_levels || {},
                 updated_at: new Date().toISOString()

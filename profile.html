@@ -139,11 +139,13 @@
             </button>
         </section>
 
-        <div class="relative w-full bg-black/20 border border-white/5 rounded-xl p-4 text-center mb-6">
-            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                Скоро будет доступно....
-            </p>
-        </div>
+        <section class="glass-card p-6 mb-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="orbitron text-xs font-black uppercase italic text-yellow-400">Ваши Подарки</h3>
+                <span id="gifts-count" class="text-[9px] font-black text-yellow-400 bg-yellow-500/10 px-3 py-1 rounded-full">0 ПОДАРКОВ</span>
+            </div>
+            <div id="gifts-grid" class="inventory-grid"></div>
+        </section>
         
         <section class="glass-card p-6 min-h-[300px]">
             <div class="flex justify-between items-center mb-6">
@@ -301,6 +303,7 @@ async function loadUser() {
             document.getElementById('ref-count').innerText = user.referral_count || 0;
             document.getElementById('u-id-label').innerText = `ID: ${user.user_id}`;
             renderGrid();
+            renderGifts(); // Отрендерить подарки
         } else {
             console.warn("Пользователь не найден в базе данных");
             document.getElementById('u-name').innerText = "ПОЛЬЗОВАТЕЛЬ НЕ НАЙДЕН";
@@ -320,9 +323,65 @@ function renderGrid() {
         const slot = document.createElement('div');
         slot.className = 'inventory-slot active-item';
         slot.onclick = () => openItem(i);
-        let imgName = it.img.split('/').pop();
+        let imgName = it.img ? it.img.split('/').pop() : 'star.png';
         slot.innerHTML = `<img src="img/${imgName}" onerror="this.src='img/star.png'">`;
         grid.appendChild(slot);
+    });
+}
+
+// НОВАЯ ФУНКЦИЯ ДЛЯ ВЫВОДА ПОДАРКОВ ИЗ БД СУПАБЕЙС
+function renderGifts() {
+    const giftsGrid = document.getElementById('gifts-grid');
+    if (!giftsGrid || !user) return;
+
+    let gifts = [];
+    if (Array.isArray(user.gifts)) {
+        gifts = user.gifts;
+    } else if (typeof user.gifts === 'string' && user.gifts.trim() !== "") {
+        try {
+            // Если массив сохранен строкой JSON
+            gifts = JSON.parse(user.gifts);
+        } catch(e) {
+            // Если сохранено через запятую: "bear.png,car.png"
+            gifts = user.gifts.split(',').map(g => g.trim());
+        }
+    }
+
+    document.getElementById('gifts-count').innerText = `${gifts.length} ПОДАРКОВ`;
+    giftsGrid.innerHTML = '';
+
+    if (gifts.length === 0) {
+        giftsGrid.innerHTML = `<div class="col-span-3 text-center text-[10px] text-gray-500 uppercase tracking-widest py-4">У вас нет подарков</div>`;
+        return;
+    }
+
+    gifts.forEach((gift) => {
+        // Извлекаем имя файла, если там полный путь
+        let giftFile = typeof gift === 'object' && gift.img ? gift.img : String(gift);
+        giftFile = giftFile.split('/').pop();
+
+        const slot = document.createElement('div');
+        slot.className = 'inventory-slot active-item';
+        
+        // По клику на подарок открываем инфо (или можно сделать кастомное действие)
+        slot.onclick = () => {
+            const info = ITEMS[giftFile] || { name: giftFile.split('.')[0] || "Подарок", price: 0 };
+            document.getElementById('modal-img').src = `img/${giftFile}`;
+            document.getElementById('modal-name').innerText = info.name;
+            document.getElementById('sell-btn').innerText = `ПОДАРОЧНЫЙ ПРЕДМЕТ`;
+            document.getElementById('sell-btn').style.opacity = "0.5";
+            document.getElementById('sell-btn').style.pointerEvents = "none";
+            
+            const withdrawBtn = document.getElementById('withdraw-btn');
+            withdrawBtn.innerText = "ПОДАРОК (НЕ ДЛЯ ВЫВОДА)";
+            withdrawBtn.style.opacity = "0.5";
+            withdrawBtn.style.pointerEvents = "none";
+            
+            document.getElementById('item-modal').style.display = 'flex';
+        };
+
+        slot.innerHTML = `<img src="img/${giftFile}" onerror="this.src='img/star.png'">`;
+        giftsGrid.appendChild(slot);
     });
 }
 
@@ -357,7 +416,6 @@ async function handlePromo() {
     }
 }
 
-// ЕДИНАЯ ФУНКЦИЯ ВЫВОДА
 async function withdrawToBot() {
     if (!user || selectedIdx === -1 || isProcessing) return;
 
@@ -381,7 +439,6 @@ async function withdrawToBot() {
         });
     };
 
-    // СЦЕНАРИЙ 1: НЕ ВЕРИФИЦИРОВАН (Инвойс Telegram Stars)
     if (!isPaid) {
         tg.showConfirm(`Для первого вывода нужна верификация аккаунта.\nСтоимость: 45 ⭐.`, async (ok) => {
             if (!ok) return;
@@ -419,7 +476,6 @@ async function withdrawToBot() {
         return;
     }
 
-    // СЦЕНАРИЙ 2: ВЕРИФИЦИРОВАН (Списание с игрового баланса звезд)
     if (currentStars < price) {
         tg.showAlert(`🛑 Недостаточно средств! Нужно ${price} ⭐.`);
         return;
@@ -432,10 +488,8 @@ async function withdrawToBot() {
         closeModal();
 
         try {
-            // 1. Сначала Flask (заявка)
             await createOrderRecord();
             
-            // 2. Обновляем инвентарь и баланс звезд
             let newInv = [...user.inventory];
             newInv.splice(selectedIdx, 1);
             
@@ -460,7 +514,6 @@ async function withdrawToBot() {
     });
 }
 
-// ФУНКЦИЯ ПРОДАЖИ ПРЕДМЕТА
 async function sellItem() {
     if (!user || selectedIdx === -1 || isProcessing) return;
 
@@ -509,20 +562,25 @@ function openItem(i) {
     
     document.getElementById('modal-img').src = `img/${fileName}`;
     document.getElementById('modal-name').innerText = info.name;
-    document.getElementById('sell-btn').innerText = `ПРОДАТЬ ЗА ${info.price} ⭐`;
+    
+    // Сброс кастомных блокировок стилей кнопок модалки
+    const sellBtn = document.getElementById('sell-btn');
+    sellBtn.innerText = `ПРОДАТЬ ЗА ${info.price} ⭐`;
+    sellBtn.style.opacity = "1";
+    sellBtn.style.pointerEvents = "auto";
     
     const withdrawBtn = document.getElementById('withdraw-btn');
+    withdrawBtn.style.opacity = "1";
+    withdrawBtn.style.pointerEvents = "auto";
+
     const userStars = user.stars || 0;
     const isPaid = user.is_paid_75 === true;
 
-    // Исправленная проверка доступности кнопки вывода
     if (isPaid && userStars < 50) {
         withdrawBtn.style.opacity = "0.4";
         withdrawBtn.style.pointerEvents = "none";
         withdrawBtn.innerText = "НУЖНО 50 ⭐ ДЛЯ ВЫВОДА";
     } else {
-        withdrawBtn.style.opacity = "1";
-        withdrawBtn.style.pointerEvents = "auto";
         withdrawBtn.innerText = isPaid ? "ВЫВЕСТИ В БОТ (50 ⭐)" : "ВЫВЕСТИ В БОТ";
     }
     
@@ -534,7 +592,7 @@ function closeModal() {
 }
 
 function copyRefLink() {
-    const refLink = `https://t.me/your_bot_username?start=ref_${userId}`; // Укажите юзернейм вашего бота
+    const refLink = `https://t.me/your_bot_username?start=ref_${userId}`;
     navigator.clipboard.writeText(refLink).then(() => {
         tg.showAlert("📋 Реферальная ссылка скопирована!");
     }).catch(() => {

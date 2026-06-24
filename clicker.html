@@ -634,43 +634,40 @@
 window.handleHero = function(id) {
     const h = heroes.find(x => x.id === id);
     
-    // Если скин уже куплен, просто выбираем его (без сброса)
+    // Если скин уже куплен, просто меняем его
     if (state.ownedHeroes.includes(id)) {
         state.activeHeroId = id;
         applyHeroVisuals(); 
         renderSkins(); 
         updateUI(); 
-        triggerSaveProcess();
+        save();
         return;
     }
 
-    // Если скин не куплен, запускаем механику Ребёртха через Telegram Popup
+    // Если скин не куплен, показываем подтверждение
     if (state.points >= h.price) {
         tg.showPopup({
             title: 'Покупка скина',
-            message: `Вы уверены? При покупке этого скина ваш баланс и улучшения сбросятся до нуля, но вы получите множитель x${h.x} навсегда!`,
+            message: Вы уверены? При покупке этого скина ваш баланс и улучшения сбросятся до нуля, но вы получите множитель x${h.x} навсегда!,
             buttons: [
                 {id: 'buy', type: 'destructive', text: 'Купить и сбросить'},
                 {type: 'cancel', text: 'Отмена'}
             ]
         }, (buttonId) => {
             if (buttonId === 'buy') {
-                // Полный сброс прогресса (Ребёртх)
+                // Логика сброса
                 state.points = 0;
-                state.marketLevels = {}; // Сброс всех апгрейдов в маркете
-                state.clickPower = 1;    // Сброс силы клика до начальной
-                state.maxEnergy = 1000;  // Сброс лимита энергии
-                state.energy = 1000;     // Восстанавливаем энергию
+                state.marketLevels = {}; // Сброс улучшений маркета
+                state.clickPower = 1;    // Сброс мощности клика до базовой
                 
-                // Награждаем новым скином
+                // Добавляем скин
                 state.ownedHeroes.push(id);
                 state.activeHeroId = id;
                 
-                // Обновляем визуал, интерфейс и принудительно сохраняем в БД
                 applyHeroVisuals();
                 renderSkins();
                 updateUI();
-                triggerSaveProcess();
+                save();
             }
         });
     }

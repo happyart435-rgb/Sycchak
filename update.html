@@ -240,7 +240,6 @@
         const tList = document.getElementById('target-list');
 
         mList.innerHTML = userInventory.map((it, i) => {
-            // Безопасно получаем имя файла картинки
             const imgPath = typeof it === 'string' ? it : (it.img || '');
             const file = imgPath.split('/').pop();
             const info = ITEMS[file] || { name: file || "Item", price: 0 };
@@ -325,7 +324,7 @@
         const winDeg = visualChance * 3.6; 
 
         const luckRoll = Math.random() * 100;
-        const isWin = luckRoll <= 80; // Твоя подкрутка 80% вин
+        const isWin = luckRoll <= 80; // 80% подкрутка
 
         const spins = 360 * 5;
         let finalDeg = isWin 
@@ -339,24 +338,41 @@
             document.getElementById('center-ui').style.opacity = "0";
             resMsg.style.display = "block";
 
-            let newInv = [...userInventory];
+            // Очищаем массив до чистых строк (имён файлов), чтобы база не ругалась на объекты
+            let newInv = userInventory.map(it => typeof it === 'string' ? it : (it.img || it));
+            
             if (isWin) {
-                resMsg.innerText = "УСПЕХ"; resMsg.style.color = "#f59e0b";
-                // Сохраняем просто чистую строку имени файла, чтобы не ломать логику остальных скриптов
-                newInv[s1.idx] = s2.file;
+                resMsg.innerText = "УСПЕХ"; 
+                resMsg.style.color = "#f59e0b";
+                if(s1.idx >= 0 && s1.idx < newInv.length) {
+                    newInv[s1.idx] = s2.file;
+                }
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             } else {
-                resMsg.innerText = "СЛОМАЛСЯ"; resMsg.style.color = "#ef4444";
-                newInv.splice(s1.idx, 1);
+                resMsg.innerText = "СЛОМАЛСЯ"; 
+                resMsg.style.color = "#ef4444";
+                if(s1.idx >= 0 && s1.idx < newInv.length) {
+                    newInv.splice(s1.idx, 1);
+                }
                 if(tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
             }
 
+            // Запись в БД с ожиданием ответа до перезагрузки страницы
             try {
-                await _supabase.from('users').update({ inventory: newInv }).eq('user_id', userId);
+                const { error } = await _supabase
+                    .from('users')
+                    .update({ inventory: newInv })
+                    .eq('user_id', userId);
+
+                if (error) throw error;
+                console.log("Успешно сохранено в БД");
             } catch(e) {
                 console.error("Ошибка сохранения в базу:", e);
+                resMsg.innerText = "ОШИБКА БД";
+                resMsg.style.color = "#ef4444";
             }
             
+            // Перезагрузка происходит строго ПОСЛЕ ответа от Supabase
             setTimeout(() => location.reload(), 2500);
         }, 3600);
     }

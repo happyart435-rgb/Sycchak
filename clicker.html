@@ -443,18 +443,23 @@
 
     // Внутри функции handleTapLogic
 function handleTapLogic(x, y) {
-    // Чем выше сила клика (clickPower), тем меньше мы тратим энергии на единицу силы
-    // Базовая стоимость 1 энергии за 1 клик. Делим на эффективность.
-    const energyCost = Math.max(0.2, 1 / (1 + (state.clickPower / 500))); 
+    // Безопасный расчет стоимости: если clickPower 0 или ошибка, используем 1
+    const power = state.clickPower || 1;
+    const energyCost = Math.max(0.1, 1 / (1 + (power / 500))); 
     
-    if (state.energy < energyCost) return;
+    // Если энергии меньше чем стоимость, клик не проходит
+    if (state.energy < energyCost) {
+        console.log("Недостаточно энергии:", state.energy, "нужно:", energyCost);
+        return; 
+    }
+    
     if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
     heroImg.classList.add('tap-anim');
     setTimeout(() => heroImg.classList.remove('tap-anim'), 50);
     
     const hero = heroes.find(h => h.id === state.activeHeroId);
-    const profit = state.clickPower * (hero ? hero.x : 1);
+    const profit = power * (hero ? hero.x : 1);
     
     state.points += profit;
     state.energy -= energyCost;

@@ -335,7 +335,7 @@
     { id: 3, name: "SSD-накопитель", baseAdd: 10, basePrice: 200, icon: "💾", type: "click" },
     { id: 4, name: "Блокчейн-узел", baseAdd: 20, basePrice: 350, icon: "⛓️", type: "click" },
     { id: 5, name: "Смарт-контракт", baseAdd: 40, basePrice: 600, icon: "📜", type: "click" },
-    { id: 6, name: "Майнинг-ферма", baseAdd: 80, basePrice: 1000, icon: "🖥️", type: "click" },
+    { id: 6, name: "Литий-ионная Батарея", baseAdd: 200, basePrice: 900, icon: "🔋", type: "energy_max" },
     { id: 7, name: "Видеокарта RTX", baseAdd: 150, basePrice: 1800, icon: "🎮", type: "click" },
     { id: 8, name: "Серверная стойка", baseAdd: 300, basePrice: 3000, icon: "🗄️", type: "click" },
     { id: 9, name: "Холодный кошелек", baseAdd: 600, basePrice: 5000, icon: "🔐", type: "click" },
@@ -441,32 +441,48 @@
     const tapZone = document.getElementById('tap-zone');
     const heroImg = document.getElementById('hero-img');
 
-    function handleTapLogic(x, y) {
-        if (state.energy < 1) return;
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    // Внутри функции handleTapLogic
+function handleTapLogic(x, y) {
+    // Чем выше сила клика (clickPower), тем меньше мы тратим энергии на единицу силы
+    // Базовая стоимость 1 энергии за 1 клик. Делим на эффективность.
+    const energyCost = Math.max(0.2, 1 / (1 + (state.clickPower / 500))); 
+    
+    if (state.energy < energyCost) return;
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 
-        heroImg.classList.add('tap-anim');
-        setTimeout(() => heroImg.classList.remove('tap-anim'), 50);
-        
-        const hero = heroes.find(h => h.id === state.activeHeroId);
-        const profit = state.clickPower * (hero ? hero.x : 1);
-        
-        state.points += profit;
-        state.energy -= 1;
-        state.lastUnix = Date.now();
-        
-        showPop(x, y, profit);
-        updateUI();
-        
-        if(state.points % 100 === 0) save();
-    }
+    heroImg.classList.add('tap-anim');
+    setTimeout(() => heroImg.classList.remove('tap-anim'), 50);
+    
+    const hero = heroes.find(h => h.id === state.activeHeroId);
+    const profit = state.clickPower * (hero ? hero.x : 1);
+    
+    state.points += profit;
+    state.energy -= energyCost;
+    state.lastUnix = Date.now();
+    
+    showPop(x, y, profit);
+    updateUI();
+}
 
-    tapZone.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        for (let i = 0; i < e.changedTouches.length; i++) {
-            handleTapLogic(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+// Обновленная функция покупки
+window.buyMarketItem = function(id) {
+    const item = marketData.find(i => i.id === id);
+    const lvl = state.marketLevels[item.id] || 0;
+    const price = Math.floor(item.basePrice * Math.pow(1.6, lvl));
+    
+    if (state.points >= price) {
+        state.points -= price;
+        state.marketLevels[id] = lvl + 1;
+        
+        if (item.type === 'click') {
+            state.clickPower += item.baseAdd;
+        } else if (item.type === 'energy_max') {
+            state.maxEnergy += item.baseAdd;
+            state.energy += item.baseAdd;
         }
-    });
+        renderMarket(); updateUI(); save();
+    }
+}
 
     function showPop(x, y, val) {
         const p = document.createElement('div');

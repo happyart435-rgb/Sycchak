@@ -648,21 +648,30 @@ function handleTapLogic(x, y) {
         }
     }
 
-    function openPanel(id, navEl) {
-        document.querySelectorAll('.drawer-wardrobe').forEach(d => d.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if (navEl && navEl.classList.contains('nav-item')) navEl.classList.add('active');
-        
-        if (id === 'market-panel') renderMarket();
-        if (id === 'wardrobe-panel') renderSkins();
-        if (id === 'leaderboard-panel') fetchLeaderboard();
+function openPanel(id, navEl) {
+    document.querySelectorAll('.drawer-wardrobe').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (navEl && navEl.classList.contains('nav-item')) navEl.classList.add('active');
+    
+    if (id === 'market-panel') renderMarket();
+    if (id === 'wardrobe-panel') renderSkins();
+    if (id === 'leaderboard-panel') fetchLeaderboard();
+
+    // ПОКАЗЫВАЕМ встроенную кнопку "Назад" в Telegram
+    if (tg.BackButton) {
+        tg.BackButton.show();
+        tg.BackButton.onClick(safeGoBack);
     }
 
-    function closeAllPanels() {
-        document.querySelectorAll('.drawer-wardrobe').forEach(d => d.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('nav-main').classList.add('active');
+function closeAllPanels() {
+    document.querySelectorAll('.drawer-wardrobe').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('nav-main').classList.add('active');
+
+    // ПРЯЧЕМ встроенную кнопку "Назад" в Telegram
+    if (tg.BackButton) {
+        tg.BackButton.hide();
     }
 
     function updateUI() {
@@ -687,10 +696,15 @@ function handleTapLogic(x, y) {
         saveToDB(); 
     }
 
-    async function safeGoBack() {
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
-        await saveToDB();
-    }
+async function safeGoBack() {
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('medium');
+    
+    // Закрываем все открытые панели и возвращаем на главную
+    closeAllPanels();
+    
+    // Фоном сохраняем прогресс
+    await saveToDB();
+}
 
     // Запускаем инициализацию игры при загрузке страницы
     window.onload = init;

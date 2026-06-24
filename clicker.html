@@ -464,17 +464,28 @@
 
     let lastTapTime = 0;
 let isOverheated = false;
+let tapCount = 0; // Добавим счетчик быстрых кликов
 
 function handleTapLogic(x, y) {
     const now = Date.now();
     const timeDiff = now - lastTapTime;
     
-    // Если кликают чаще 100мс — включаем перегрев
-    if (timeDiff < 100) {
+    // Порог 50 мс лучше подходит для быстрых кликов пальцами
+    // Теперь перегрев срабатывает, если клики идут СЛИШКОМ часто подряд
+    if (timeDiff < 50) {
+        tapCount++;
+    } else {
+        tapCount = 0; // Сбрасываем счетчик, если кликают в нормальном ритме
+    }
+
+    // Перегрев включается только если игрок сделал более 5-6 сверхбыстрых кликов
+    if (tapCount > 6) {
         triggerOverheat();
     }
+    
     lastTapTime = now;
-
+    // ... остальной код функции ...
+}
     // Расход энергии (в 50 раз быстрее при перегреве)
     const energyCost = isOverheated ? 50 : 1;
     if (state.energy < energyCost) return;

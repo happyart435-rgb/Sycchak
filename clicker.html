@@ -476,7 +476,7 @@ function handleTapLogic(x, y) {
     const timeDiff = now - lastTapTime;
     
     // Если кликают чаще 100мс — включаем перегрев
-    if (timeDiff < 10) {
+    if (timeDiff < 1) {
         triggerOverheat();
     }
     lastTapTime = now;

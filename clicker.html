@@ -332,7 +332,7 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://sycchak.vercel.app/api'; 
+    const BACKEND_URL = 'https://stars-droper-main.vercel.app/api'; 
     tg.expand();
 
     const heroes = [
@@ -379,7 +379,9 @@
         clickPower: 1,
         marketLevels: {},
         lastUnix: Date.now(),
-        lastChargeUnix: 0
+        lastChargeUnix: 0,
+        passiveIncomePerHour: 0, // Храним текущий пассивный доход в час
+        ownedDbCards: [] // Храним ID купленных карточек из базы
     };
 
     function updateUI() {
@@ -405,7 +407,7 @@
     async function loadFromDB() {
         const userId = tg.initDataUnsafe?.user?.id || 12345; 
         try {
-            const res = await fetch(`${BACKEND_URL}/get_balance/${userId}?t=${Date.now()}`);
+            const res = await fetch(`${BACKEND_URL}/get_balance?user_id=${userId}&t=${Date.now()}`);
             const data = await res.json();
             if (data && !data.error) {
                 state.points = parseInt(data.points || 0);
@@ -416,6 +418,8 @@
                 state.ownedHeroes = Array.isArray(data.owned_heroes) ? data.owned_heroes : [0];
                 state.marketLevels = data.market_levels || {};
                 state.lastChargeUnix = parseInt(data.last_charge_unix || 0);
+                state.passiveIncomePerHour = parseInt(data.passive_income_per_hour || 0);
+                state.ownedDbCards = Array.isArray(data.owned_db_cards) ? data.owned_db_cards : [];
                 
                 updateUI();
                 applyHeroVisuals();
@@ -444,7 +448,9 @@
                     active_hero_id: state.activeHeroId,
                     owned_heroes: state.ownedHeroes,  
                     market_levels: state.marketLevels,
-                    last_charge_unix: state.lastChargeUnix
+                    last_charge_unix: state.lastChargeUnix,
+                    passive_income_per_hour: state.passiveIncomePerHour,
+                    owned_db_cards: state.ownedDbCards
                 })
             });
         } catch (e) { 
@@ -474,25 +480,102 @@
         }
     }
 
+    // ПОЛУЧЕНИЕ И КУПЛЯ ЛИМИТИРОВАННЫХ КАРТОЧЕК С СЕРВЕРА
+    async function fetchDbCards() {
+        const container = document.getElementById('db-cards-list');
+        container.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.5;">Загрузка карточек...</div>';
+        try {
+            const res = await fetch(`${BACKEND_URL}/get_cards?t=${Date.now()}`);
+            const cards = await res.json();
+            container.innerHTML = '';
+
+            if(!cards || cards.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.5;">Нет доступных карт</div>';
+                return;
+            }
+
+            cards.forEach(card => {
+                const isOwned = state.ownedDbCards.includes(card.id);
+                const pointsPerHour = parseInt(card.points_per_hour || 0);
+                const price = parseInt(card.price || 0);
+                const isDisabled = state.points < price || isOwned;
+
+                container.innerHTML += `
+                    <div class="card-item">
+                        <img src="${card.img_url}" class="card-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
+                        <div class="card-title">${card.name}</div>
+                        <div class="card-desc">+${pointsPerHour.toLocaleString()} / час</div>
+                        <div style="font-size:9px; color:#aaa; margin-bottom:10px;">Длительность: ${card.duration_hours}ч</div>
+                        <button class="btn-action ${isOwned ? 'btn-owned' : 'btn-buy'}" 
+                            ${isDisabled ? 'disabled' : ''} 
+                            onclick="buyDbCard('${card.id}', ${price}, ${pointsPerHour})">
+                            ${isOwned ? 'КУПЛЕНО' : price.toLocaleString()}
+                        </button>
+                    </div>`;
+            });
+        } catch (e) {
+            container.innerHTML = '<div style="text-align:center; padding:30px; color:red;">Ошибка связи с БД</div>';
+        }
+    }
+
+    window.buyDbCard = async function(cardId, price, pointsPerHour) {
+        if (state.points < price) return;
+        
+        const userId = tg.initDataUnsafe?.user?.id || 12345;
+        try {
+            // Отправляем запрос покупки на бэкенд
+            const res = await fetch(`${BACKEND_URL}/buy_card`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: userId, card_id: cardId })
+            });
+            const result = await res.json();
+            
+            if (result && !result.error) {
+                state.points -= price;
+                state.ownedDbCards.push(cardId);
+                state.passiveIncomePerHour += pointsPerHour;
+                
+                fetchDbCards();
+                updateUI();
+                triggerSaveProcess();
+            } else {
+                alert(result.message || "Ошибка при покупке карты");
+            }
+        } catch(e) {
+            console.error("Ошибка при покупке карты:", e);
+        }
+    }
+
     function startLoops() {
+        // 1. Обновление энергии + начисление пассивного дохода с карточек (каждую секунду)
         setInterval(() => {
+            // Энергия
             if (state.energy < state.maxEnergy) {
                 const regenLvl = state.marketLevels[20] || 0; 
                 const energyToRegen = 1 + regenLvl; 
                 state.energy = Math.min(state.maxEnergy, state.energy + energyToRegen);
-                updateUI();
             }
+
+            // Пассивный доход в секунду: (доход в час / 3600)
+            if (state.passiveIncomePerHour > 0) {
+                const incomePerSecond = state.passiveIncomePerHour / 3600;
+                state.points += incomePerSecond;
+            }
+
+            updateUI();
         }, 1000);
+
+        // 2. Автоматическое сохранение текущего прогресса на сервер (каждые 15 секунд)
         setInterval(triggerSaveProcess, 15000); 
     }
 
     const tapZone = document.getElementById('tap-zone');
     const heroImg = document.getElementById('hero-img');
-    let isOverheated = false;
 
     function handleTapLogic(x, y) {
         const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
-        const tapCost = 1; // Расход энергии за 1 тап
+        const tapCost = 1;
 
         if (state.energy >= tapCost) {
             state.energy -= tapCost;
@@ -631,7 +714,7 @@
         });
     }
 
-window.handleHero = function(id) {
+    window.handleHero = function(id) {
         const h = heroes.find(x => x.id === id);
         
         if (state.ownedHeroes.includes(id)) {
@@ -656,8 +739,8 @@ window.handleHero = function(id) {
                     state.points = 0;
                     state.marketLevels = {}; 
                     state.clickPower = 1;    
-                    state.maxEnergy = 1000;  // Сбрасываем бак до базы
-                    state.energy = 1000;     // Заливаем фулл
+                    state.maxEnergy = 1000;  
+                    state.energy = 1000;     
                     
                     state.ownedHeroes.push(id);
                     state.activeHeroId = id;
@@ -693,6 +776,7 @@ window.handleHero = function(id) {
         if (id === 'market-panel') renderMarket();
         if (id === 'wardrobe-panel') renderSkins();
         if (id === 'leaderboard-panel') fetchLeaderboard();
+        if (id === 'db-cards-panel') fetchDbCards(); // Загружаем карточки при открытии панели
     }
 
     window.closeAllPanels = function() {
@@ -708,6 +792,11 @@ window.handleHero = function(id) {
             state = { ...state, ...parsed };
             const elapsed = Math.floor((Date.now() - state.lastUnix) / 1000);
             state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
+            
+            // Начисление пассивного офлайн дохода, пока игрока не было
+            if(state.passiveIncomePerHour > 0 && elapsed > 0) {
+                state.points += (state.passiveIncomePerHour / 3600) * elapsed;
+            }
         }
         
         const heroImgEl = document.getElementById('hero-img');

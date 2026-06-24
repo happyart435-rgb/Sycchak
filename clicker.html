@@ -558,15 +558,46 @@
     }
 
     window.handleHero = function(id) {
-        const h = heroes.find(x => x.id === id);
-        if (state.ownedHeroes.includes(id)) state.activeHeroId = id;
-        else if (state.points >= h.price) {
-            state.points -= h.price;
-            state.ownedHeroes.push(id);
-            state.activeHeroId = id;
-        }
-        applyHeroVisuals(); renderSkins(); updateUI(); save();
+    const h = heroes.find(x => x.id === id);
+    
+    // Если скин уже куплен, просто меняем его
+    if (state.ownedHeroes.includes(id)) {
+        state.activeHeroId = id;
+        applyHeroVisuals(); 
+        renderSkins(); 
+        updateUI(); 
+        save();
+        return;
     }
+
+    // Если скин не куплен, показываем подтверждение
+    if (state.points >= h.price) {
+        tg.showPopup({
+            title: 'Покупка скина',
+            message: `Вы уверены? При покупке этого скина ваш баланс и улучшения сбросятся до нуля, но вы получите множитель x${h.x} навсегда!`,
+            buttons: [
+                {id: 'buy', type: 'destructive', text: 'Купить и сбросить'},
+                {type: 'cancel', text: 'Отмена'}
+            ]
+        }, (buttonId) => {
+            if (buttonId === 'buy') {
+                // Логика сброса
+                state.points = 0;
+                state.marketLevels = {}; // Сброс улучшений маркета
+                state.clickPower = 1;    // Сброс мощности клика до базовой
+                
+                // Добавляем скин
+                state.ownedHeroes.push(id);
+                state.activeHeroId = id;
+                
+                applyHeroVisuals();
+                renderSkins();
+                updateUI();
+                save();
+            }
+        });
+    }
+}
 
     function openPanel(id, navEl) {
         document.querySelectorAll('.drawer-wardrobe').forEach(d => d.classList.remove('active'));

@@ -481,23 +481,33 @@
     function renderMarket() {
     const container = document.getElementById('market-list');
     container.innerHTML = '';
+    
     marketData.forEach((item, index) => {
         const lvl = state.marketLevels[item.id] || 0;
-        const price = Math.floor(item.basePrice * Math.pow(1.6, lvl));
-        const bonus = item.baseAdd * (lvl + 1);
+        const maxLvl = item.type === 'energy' ? 5 : 15; // Лимиты уровней
+        const isMax = lvl >= maxLvl;
         
-        // Предмет доступен, если это первый (id 0) или если куплен хотя бы 1 уровень предыдущего
-        const isLocked = index > 0 && (state.marketLevels[index - 1] || 0) === 0;
+        const price = isMax ? 0 : Math.floor(item.basePrice * Math.pow(1.6, lvl));
+        
+        // Определяем текст бонуса
+        let bonusText = '';
+        if (item.type === 'click') {
+            bonusText = '+' + (item.baseAdd * (lvl + 1)) + ' к клику';
+        } else {
+            bonusText = '+' + item.baseAdd + ' к макс. энергии';
+        }
+
+        const isLocked = index > 0 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
         
         container.innerHTML += `
             <div class="card-item ${isLocked ? 'locked' : ''}">
-                <span class="card-icon" style="${isLocked ? 'filter: brightness(0);' : ''}">${item.icon}</span>
+                <span class="card-icon">${item.icon}</span>
                 <div class="card-title">${isLocked ? '???' : item.name}</div>
-                <div class="card-desc">${isLocked ? '????' : '+' + bonus + ' к клику'}</div>
+                <div class="card-desc">${isLocked ? '????' : (isMax ? 'УРОВЕНЬ МАКСИМАЛЕН' : bonusText)}</div>
                 <button class="btn-action btn-buy" 
-                    ${isLocked || state.points < price ? 'disabled' : ''} 
+                    ${(isLocked || state.points < price || isMax) ? 'disabled' : ''} 
                     onclick="buyMarketItem(${item.id})">
-                    ${isLocked ? 'ЗАКРЫТО' : price.toLocaleString()}
+                    ${isMax ? 'МАКС' : price.toLocaleString()}
                 </button>
             </div>`;
     });

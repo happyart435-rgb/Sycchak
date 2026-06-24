@@ -446,6 +446,12 @@
         await loadFromDB();
         updateUI();
         startLoops();
+
+        // ДОБАВЬТЕ ЭТИ СТРОКИ:
+        const tapZone = document.getElementById('tap-zone');
+        tapZone.addEventListener('click', (e) => {
+            handleTapLogic(e.clientX, e.clientY);
+        });
     }
 
     function startLoops() {

@@ -221,6 +221,11 @@
             background: #444 !important;
             color: #888 !important;
         }
+
+        .card-item.locked .card-icon {
+    filter: brightness(0) !important;
+    opacity: 0.3;
+}
     </style>
 </head>
 <body>
@@ -324,13 +329,27 @@
 ];
 
     const marketData = [
-        { id: 0, name: "Энергетик", baseAdd: 5, basePrice: 150, icon: "⚡️", type: "click" },
-        { id: 1, name: "Перчатки", baseAdd: 15, basePrice: 1000, icon: "🧤", type: "click" },
-        { id: 2, name: "Золотой палец", baseAdd: 60, basePrice: 5000, icon: "☝️", type: "click" },
-        { id: 3, name: "Кликер-бот", baseAdd: 250, basePrice: 20000, icon: "🤖", type: "click" },
-        { id: 4, name: "Тяжелая гиря", baseAdd: 1000, basePrice: 100000, icon: "🏋️", type: "click" },
-        { id: 5, name: "Мега-Батарея", baseAdd: 500, basePrice: 50000, icon: "🔋", type: "energy" }
-    ];
+    { id: 0, name: "Курсор", baseAdd: 1, basePrice: 50, icon: "🖱️", type: "click" },
+    { id: 1, name: "Клик-бот", baseAdd: 2, basePrice: 80, icon: "🤖", type: "click" },
+    { id: 2, name: "Прокси-сервер", baseAdd: 5, basePrice: 120, icon: "📡", type: "click" },
+    { id: 3, name: "SSD-накопитель", baseAdd: 10, basePrice: 200, icon: "💾", type: "click" },
+    { id: 4, name: "Блокчейн-узел", baseAdd: 20, basePrice: 350, icon: "⛓️", type: "click" },
+    { id: 5, name: "Смарт-контракт", baseAdd: 40, basePrice: 600, icon: "📜", type: "click" },
+    { id: 6, name: "Майнинг-ферма", baseAdd: 80, basePrice: 1000, icon: "🖥️", type: "click" },
+    { id: 7, name: "Видеокарта RTX", baseAdd: 150, basePrice: 1800, icon: "🎮", type: "click" },
+    { id: 8, name: "Серверная стойка", baseAdd: 300, basePrice: 3000, icon: "🗄️", type: "click" },
+    { id: 9, name: "Холодный кошелек", baseAdd: 600, basePrice: 5000, icon: "🔐", type: "click" },
+    { id: 10, name: "Ликвидный пул", baseAdd: 1200, basePrice: 8500, icon: "💧", type: "click" },
+    { id: 11, name: "DAO-голосование", baseAdd: 2500, basePrice: 14000, icon: "🗳️", type: "click" },
+    { id: 12, name: "Трейдинг-бот", baseAdd: 5000, basePrice: 25000, icon: "📈", type: "click" },
+    { id: 13, name: "Виртуальный офис", baseAdd: 10000, basePrice: 45000, icon: "🏢", type: "click" },
+    { id: 14, name: "Биржевой терминал", baseAdd: 20000, basePrice: 80000, icon: "🖥️", type: "click" },
+    { id: 15, name: "Кибер-защита", baseAdd: 40000, basePrice: 150000, icon: "🛡️", type: "click" },
+    { id: 16, name: "Облачный кластер", baseAdd: 80000, basePrice: 300000, icon: "☁️", type: "click" },
+    { id: 17, name: "NFT-Маркетплейс", baseAdd: 160000, basePrice: 600000, icon: "🖼️", type: "click" },
+    { id: 18, name: "Квантовый процессор", baseAdd: 350000, basePrice: 1200000, icon: "⚛️", type: "click" },
+    { id: 19, name: "Мастер-нода Nova", baseAdd: 800000, basePrice: 2500000, icon: "👑", type: "click" }
+];
 
     let state = {
         points: 0,
@@ -459,28 +478,29 @@
     }
 
     function renderMarket() {
-        const container = document.getElementById('market-list');
-        container.innerHTML = '';
-        marketData.forEach(item => {
-            const lvl = state.marketLevels[item.id] || 0;
-            const price = Math.floor(item.basePrice * Math.pow(1.6, lvl));
-            const bonus = item.baseAdd * (lvl + 1);
-            const isMax = lvl >= 15;
-            
-            container.innerHTML += `
-                <div class="card-item">
-                    <span class="lvl-badge" style="${isMax ? 'background:#555;' : ''}">${isMax ? 'MAX' : 'LVL ' + lvl}</span>
-                    <span class="card-icon">${item.icon}</span>
-                    <div class="card-title">${item.name}</div>
-                    <div class="card-desc">${item.type === 'click' ? '+' + bonus + ' к клику' : '+' + item.baseAdd + ' к лимиту'}</div>
-                    <button class="btn-action btn-buy" 
-                        ${(state.points < price || isMax) ? 'disabled' : ''} 
-                        onclick="buyMarketItem(${item.id})">
-                        ${isMax ? 'МАКСИМУМ' : price.toLocaleString()}
-                    </button>
-                </div>`;
-        });
-    }
+    const container = document.getElementById('market-list');
+    container.innerHTML = '';
+    marketData.forEach((item, index) => {
+        const lvl = state.marketLevels[item.id] || 0;
+        const price = Math.floor(item.basePrice * Math.pow(1.6, lvl));
+        const bonus = item.baseAdd * (lvl + 1);
+        
+        // Предмет доступен, если это первый (id 0) или если куплен хотя бы 1 уровень предыдущего
+        const isLocked = index > 0 && (state.marketLevels[index - 1] || 0) === 0;
+        
+        container.innerHTML += `
+            <div class="card-item ${isLocked ? 'locked' : ''}">
+                <span class="card-icon" style="${isLocked ? 'filter: brightness(0);' : ''}">${item.icon}</span>
+                <div class="card-title">${isLocked ? '???' : item.name}</div>
+                <div class="card-desc">${isLocked ? '????' : '+' + bonus + ' к клику'}</div>
+                <button class="btn-action btn-buy" 
+                    ${isLocked || state.points < price ? 'disabled' : ''} 
+                    onclick="buyMarketItem(${item.id})">
+                    ${isLocked ? 'ЗАКРЫТО' : price.toLocaleString()}
+                </button>
+            </div>`;
+    });
+}
 
     window.buyMarketItem = function(id) {
         const item = marketData.find(i => i.id === id);

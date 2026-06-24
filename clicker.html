@@ -334,20 +334,19 @@
 </div>
 
 <script>
-    
     const tg = window.Telegram.WebApp;
     const BACKEND_URL = 'https://stars-drop.vercel.app/api';
     tg.expand();
 
     const heroes = [
-    { id: 0, x: 1, price: 0, img: "img/Новая папка (3)/pepe1.png", color: "#facc15", bg: "#1a1605" },
-    { id: 1, x: 3, price: 750000, img: "img/Новая папка (3)/pepe2.png", color: "#facc15", bg: "#2a250f" },
-    { id: 2, x: 8, price: 2500000, img: "img/Новая папка (3)/pepe3.png", color: "#a855f7", bg: "#251635" },
-    { id: 3, x: 15, price: 8000000, img: "img/Новая папка (3)/pepe4.png", color: "#3b82f6", bg: "#162235" },
-    { id: 4, x: 30, price: 30000000, img: "img/Новая папка (3)/pepe5.png", color: "#eab308", bg: "#352e16" },
-    { id: 5, x: 60, price: 150000000, img: "img/Новая папка (3)/pepe6.png", color: "#ef4444", bg: "#351616" },
-    { id: 6, x: 120, price: 800000000, img: "img/hero.png", color: "#60a5fa", bg: "#162235" }
-];
+        { id: 0, x: 1, price: 0, img: "img/Новая папка (3)/pepe1.png", color: "#facc15", bg: "#1a1605" },
+        { id: 1, x: 3, price: 750000, img: "img/Новая папка (3)/pepe2.png", color: "#facc15", bg: "#2a250f" },
+        { id: 2, x: 8, price: 2500000, img: "img/Новая папка (3)/pepe3.png", color: "#a855f7", bg: "#251635" },
+        { id: 3, x: 15, price: 8000000, img: "img/Новая папка (3)/pepe4.png", color: "#3b82f6", bg: "#162235" },
+        { id: 4, x: 30, price: 30000000, img: "img/Новая папка (3)/pepe5.png", color: "#eab308", bg: "#352e16" },
+        { id: 5, x: 60, price: 150000000, img: "img/Новая папка (3)/pepe6.png", color: "#ef4444", bg: "#351616" },
+        { id: 6, x: 120, price: 800000000, img: "img/hero.png", color: "#60a5fa", bg: "#162235" }
+    ];
 
     const marketData = [
     { id: 0, name: "Курсор", baseAdd: 1, basePrice: 50, icon: "🖱️", type: "click" },
@@ -463,69 +462,57 @@
     const heroImg = document.getElementById('hero-img');
 
     let lastTapTime = 0;
-let isOverheated = false;
-let tapCount = 0; // Добавим счетчик быстрых кликов
+    let isOverheated = false;
+    let tapCount = 0;
 
-function handleTapLogic(x, y) {
-    const now = Date.now();
-    const timeDiff = now - lastTapTime;
-    
-    // Порог 50 мс лучше подходит для быстрых кликов пальцами
-    // Теперь перегрев срабатывает, если клики идут СЛИШКОМ часто подряд
-    if (timeDiff < 50) {
-        tapCount++;
-    } else {
-        tapCount = 0; // Сбрасываем счетчик, если кликают в нормальном ритме
-    }
-
-    // Перегрев включается только если игрок сделал более 5-6 сверхбыстрых кликов
-    if (tapCount > 6) {
-        triggerOverheat();
-    }
-    
-    lastTapTime = now;
-    // ... остальной код функции ...
-}
-    // Расход энергии (в 50 раз быстрее при перегреве)
-    const energyCost = isOverheated ? 50 : 1;
-    if (state.energy < energyCost) return;
-
-    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-
-    heroImg.classList.add('tap-anim');
-    setTimeout(() => heroImg.classList.remove('tap-anim'), 50);
-    
-    const hero = heroes.find(h => h.id === state.activeHeroId);
-    const profit = state.clickPower * (hero ? hero.x : 1);
-    
-    state.points += profit;
-    state.energy -= energyCost;
-    
-    showPop(x, y, profit);
-    updateUI();
-}
-
-function triggerOverheat() {
-    if (isOverheated) return;
-    isOverheated = true;
-    
-    const msg = document.getElementById('overheat-msg');
-    document.body.classList.add('overheat-flash');
-    msg.style.opacity = '1';
-    
-    // Выключаем перегрев через 5 секунд
-    setTimeout(() => {
-        isOverheated = false;
-        document.body.classList.remove('overheat-flash');
-        msg.style.opacity = '0';
-    }, 5000);
-}
-    tapZone.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        for (let i = 0; i < e.changedTouches.length; i++) {
-            handleTapLogic(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+    function handleTapLogic(x, y) {
+        const now = Date.now();
+        const timeDiff = now - lastTapTime;
+        
+        if (timeDiff < 50) {
+            tapCount++;
+        } else {
+            tapCount = 0;
         }
-    });
+
+        if (tapCount > 6) {
+            triggerOverheat();
+        }
+        
+        lastTapTime = now;
+
+        const energyCost = isOverheated ? 50 : 1;
+        if (state.energy < energyCost) return;
+
+        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+        heroImg.classList.add('tap-anim');
+        setTimeout(() => heroImg.classList.remove('tap-anim'), 50);
+        
+        const hero = heroes.find(h => h.id === state.activeHeroId);
+        const profit = state.clickPower * (hero ? hero.x : 1);
+        
+        state.points += profit;
+        state.energy -= energyCost;
+        
+        showPop(x, y, profit);
+        updateUI();
+    }
+
+    function triggerOverheat() {
+        if (isOverheated) return;
+        isOverheated = true;
+        
+        const msg = document.getElementById('overheat-msg');
+        document.body.classList.add('overheat-flash');
+        msg.style.opacity = '1';
+        
+        setTimeout(() => {
+            isOverheated = false;
+            document.body.classList.remove('overheat-flash');
+            msg.style.opacity = '0';
+        }, 5000);
+    }
 
     function showPop(x, y, val) {
         const p = document.createElement('div');

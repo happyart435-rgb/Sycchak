@@ -491,13 +491,10 @@
         document.getElementById('nav-main').classList.add('active');
     }
 
-    window.goBackWithSave = function() {
+window.goBackWithSave = function() {
         triggerSaveProcess();
-        if (tg.close) {
-            tg.close();
-        } else {
-            window.history.back();
-        }
+        // Перенаправляем пользователя на главную страницу
+        window.location.href = "index.html";
     }
 
     async function fetchLeaderboard() {

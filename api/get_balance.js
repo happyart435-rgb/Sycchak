@@ -11,8 +11,15 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    // Получаем user_id из query параметров
-    const { user_id } = req.query;
+    // Пробуем взять user_id из query. Если фронтенд шлет /api/get_balance/12345, 
+    // Vercel может записать остаток пути в req.url. Сделаем универсальный поиск ID:
+    let user_id = req.query.user_id;
+    
+    if (!user_id) {
+        // Извлекаем любые цифры из конца строки URL (на случай путей типа /get_balance/12345)
+        const match = req.url.match(/\/(\d+)/);
+        if (match) user_id = match[1];
+    }
 
     if (!user_id) {
         return res.status(400).json({ error: 'Missing user_id' });
@@ -23,14 +30,10 @@ export default async function handler(req, res) {
             .from('users_state')
             .select('*')
             .eq('user_id', user_id)
-            .single();
+            .maybeSingle(); // maybeSingle безопаснее, он не спамит ошибками если юзера нет
 
-        if (error && error.code !== 'PGRST116') { 
-            // PGRST116 означает, что строка не найдена — это нормально для новых юзеров
-            throw error;
-        }
+        if (error) throw error;
 
-        // Если юзера еще нет в базе, возвращаем дефолтные стартовые значения
         if (!data) {
             return res.status(200).json({
                 points: 0,
@@ -43,8 +46,10 @@ export default async function handler(req, res) {
             });
         }
 
-        // Превращаем BigInt в строку/число для JSON, иначе будет ошибка
-        data.user_id = data.user_id.toString();
+        // Преобразуем bigint id в строку БЕЗОПАСНО для JSON
+        if (data.user_id) {
+            data.user_id = data.user_id.toString();
+        }
 
         return res.status(200).json(data);
     } catch (error) {

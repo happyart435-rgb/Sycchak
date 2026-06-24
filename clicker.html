@@ -488,16 +488,25 @@
     let isOverheated = false;
 
 function handleTapLogic(x, y) {
-        const now = Date.now();
-        const timeDiff = now - lastTapTime;
-        
-        // Если клики приходят чаще 30мс (реально быстро) — это подозрительно
-        if (timeDiff < 30) {
-            tapCount++;
-        } else {
-            // Если пауза между сериями нажатий больше 100мс, сбрасываем счетчик
-            if (timeDiff > 1) tapCount = 0; 
-        }
+    const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
+    const tapCost = state.clickPower;
+
+    if (state.energy >= tapCost) {
+        state.energy -= tapCost;
+        const earned = state.clickPower * currentHero.x;
+        state.points += earned;
+
+        // Анимация клика персонажа
+        const img = document.getElementById('hero-img');
+        img.classList.add('tap-anim');
+        setTimeout(() => img.classList.remove('tap-anim'), 50);
+
+        showPop(x, y, earned);
+        updateUI();
+    } else {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+    }
+}
 
     function triggerOverheat() {
         if (isOverheated) return;

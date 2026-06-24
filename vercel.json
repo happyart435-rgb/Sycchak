@@ -1,12 +1,16 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/index.py", "use": "@vercel/python" },
-    { "src": "**/!(api)/*", "use": "@vercel/static" },
-    { "src": "*", "use": "@vercel/static" }
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "css/**", "use": "@vercel/static" },
+    { "src": "img/**", "use": "@vercel/static" },
+    { "src": "*.png", "use": "@vercel/static" }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "api/index.py" },
+    { "source": "/api/get_balance/:userId", "destination": "/api/get_balance.js?user_id=:userId" },
+    { "source": "/api/update_balance", "destination": "/api/update_balance.js" },
+    { "source": "/api/get_leaders", "destination": "/api/get_leaders.js" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

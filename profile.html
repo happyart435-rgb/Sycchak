@@ -10,14 +10,13 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Inter:wght@400;700;900&display=swap');
         :root { 
-            --bg-dark: #0f0a02; /* Премиальный черный с золотым отливом */
-            --accent-gold: #f5b025; /* Благородный золотой */
+            --bg-dark: #0f0a02; 
+            --accent-gold: #f5b025; 
             --panel-bg: rgba(25, 19, 6, 0.75); 
         }
         body { background: var(--bg-dark); color: white; font-family: 'Inter', sans-serif; margin: 0; overflow-x: hidden; -webkit-user-select: none; user-select: none; }
         #stars-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
         
-        /* Золотой радиальный градиент */
         .main-wrapper { 
             position: relative; z-index: 1; padding: 24px 20px 140px; 
             background: radial-gradient(circle at 50% 30%, #513e11 0%, #0f0a02 80%); 
@@ -29,17 +28,14 @@
         .inventory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         .inventory-slot { aspect-ratio: 1/1; background: rgba(245, 176, 37, 0.04); border: 1px dashed rgba(245, 176, 37, 0.18); border-radius: 24px; display: flex; align-items: center; justify-content: center; transition: 0.3s; overflow: hidden; }
         
-        /* Активные предметы в золотой рамке */
         .active-item { border: 1.5px solid var(--accent-gold); background: rgba(245, 176, 37, 0.08); cursor: pointer; }
         .active-item img { width: 70%; height: 70%; object-fit: contain; filter: drop-shadow(0 5px 15px rgba(245, 176, 37, 0.35)); }
         
-        /* Кнопка золотая */
         .btn-gold { background: var(--accent-gold); color: #000; font-weight: 900; text-transform: uppercase; border-radius: 20px; box-shadow: 0 6px 0 #c68c16; transition: 0.1s; outline: none; }
         .btn-gold:active { transform: translateY(3px); box-shadow: 0 3px 0 #c68c16; }
         
         #item-modal { position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.92); backdrop-filter: blur(15px); }
         
-        /* ОБНОВЛЕННЫЙ ТУЛБАР */
         .dock-bar { 
             position: fixed; 
             bottom: 0; 
@@ -64,24 +60,10 @@
             text-decoration: none; 
             transition: all 0.2s ease;
         }
-        .dock-btn span {
-            font-size: 11px; 
-            font-weight: 700;
-            letter-spacing: 0.03em;
-        }
-        .dock-btn svg {
-            width: 26px;
-            height: 26px;
-            transition: transform 0.2s ease;
-            fill: currentColor;
-        }
-        .dock-btn:active svg {
-            transform: scale(0.9);
-        }
-        .dock-btn.active { 
-            color: var(--accent-gold); 
-            filter: drop-shadow(0 0 6px rgba(245, 176, 37, 0.4)); 
-        }
+        .dock-btn span { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
+        .dock-btn svg { width: 26px; height: 26px; transition: transform 0.2s ease; fill: currentColor; }
+        .dock-btn:active svg { transform: scale(0.9); }
+        .dock-btn.active { color: var(--accent-gold); filter: drop-shadow(0 0 6px rgba(245, 176, 37, 0.4)); }
     </style>
 </head>
 <body>
@@ -123,30 +105,32 @@
             </div>
         </section>
 
-<section class="glass-card p-6 mb-6 border-yellow-400/10">
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h3 class="orbitron text-[10px] font-black uppercase text-yellow-400 tracking-widest">Реферальная система</h3>
-            <p class="text-[9px] text-gray-400 uppercase mt-1">Приглашено: <span id="ref-count" class="text-white font-bold">0</span> друзей</p>
-        </div>
-        
-        <!-- Индикатор разработки -->
-        <div class="flex items-center gap-2 bg-yellow-500/5 px-3 py-1.5 rounded-full border border-yellow-500/10">
-            <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
-            </span>
-            <span class="text-[8px] font-black uppercase text-yellow-500/80 tracking-widest">В разработке</span>
-        </div>
-    </div>
+        <section class="glass-card p-6 mb-6 border-yellow-400/10">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="orbitron text-[10px] font-black uppercase text-yellow-400 tracking-widest">Реферальная система</h3>
+                    <p class="text-[9px] text-gray-400 uppercase mt-1">Приглашено: <span id="ref-count" class="text-white font-bold">0</span> друзей</p>
+                </div>
+                <div class="flex items-center gap-2 bg-yellow-500/5 px-3 py-1.5 rounded-full border border-yellow-500/10">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                    </span>
+                    <span class="text-[8px] font-black uppercase text-yellow-500/80 tracking-widest">В разработке</span>
+                </div>
+            </div>
+            <button onclick="copyRefLink()" class="w-full bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 text-[10px] text-yellow-500 font-bold uppercase tracking-widest hover:bg-yellow-500/20 transition-all">
+                Скопировать ссылку
+            </button>
+        </section>
 
-    <!-- Заглушка вместо активной ссылки -->
-    <div class="relative w-full bg-black/20 border border-white/5 rounded-xl p-4 text-center">
-        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-            Скоро будет доступно....
-        </p>
-    </div>
-</section>
+        <section class="glass-card p-6 mb-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="orbitron text-xs font-black uppercase italic text-yellow-400">Ваши Подарки</h3>
+                <span id="gifts-count" class="text-[9px] font-black text-yellow-400 bg-yellow-500/10 px-3 py-1 rounded-full">0 ПОДАРКОВ</span>
+            </div>
+            <div id="gifts-grid" class="inventory-grid"></div>
+        </section>
         
         <section class="glass-card p-6 min-h-[300px]">
             <div class="flex justify-between items-center mb-6">
@@ -264,7 +248,7 @@ const ITEMS = {
     "shar.jpg": { name: "Magic Ball", price: 1000 },
     "shlem.png": { name: "Biker Helmet", price: 3500 },
     "soska.jpg": { name: "Diamond Pacifier", price: 3000 },
-    "star.png": { name: "Pure Star", price: 5 },
+    "star.png": { name: "Pure Star", price: 5 }, // Лишний дубликат удален
     "statyya.jpg": { name: "Hero Statue", price: 41000 },
     "venok.jpg": { name: "Wreath Flower", price: 500 },
     "yayko.png": { name: "Dragon Egg", price: 600 },
@@ -281,7 +265,7 @@ const ITEMS = {
 
 let user = null;
 let selectedIdx = -1;
-let isProcessing = false; // Блокировщик двойных нажатий
+let isProcessing = false; 
 
 async function loadUser() {
     try {
@@ -309,7 +293,7 @@ async function loadUser() {
             document.getElementById('ref-count').innerText = user.referral_count || 0;
             document.getElementById('u-id-label').innerText = `ID: ${user.user_id}`;
             renderGrid();
-            renderGifts(); // Отрендерить подарки
+            renderGifts(); 
         } else {
             console.warn("Пользователь не найден в базе данных");
             document.getElementById('u-name').innerText = "ПОЛЬЗОВАТЕЛЬ НЕ НАЙДЕН";
@@ -329,13 +313,14 @@ function renderGrid() {
         const slot = document.createElement('div');
         slot.className = 'inventory-slot active-item';
         slot.onclick = () => openItem(i);
-        let imgName = it.img ? it.img.split('/').pop() : 'star.png';
+        // Безопасное извлечение имени файла
+        let imgPath = typeof it === 'string' ? it : (it?.img || 'star.png');
+        let imgName = imgPath.split('/').pop();
         slot.innerHTML = `<img src="img/${imgName}" onerror="this.src='img/star.png'">`;
         grid.appendChild(slot);
     });
 }
 
-// НОВАЯ ФУНКЦИЯ ДЛЯ ВЫВОДА ПОДАРКОВ ИЗ БД СУПАБЕЙС
 function renderGifts() {
     const giftsGrid = document.getElementById('gifts-grid');
     if (!giftsGrid || !user) return;
@@ -345,10 +330,8 @@ function renderGifts() {
         gifts = user.gifts;
     } else if (typeof user.gifts === 'string' && user.gifts.trim() !== "") {
         try {
-            // Если массив сохранен строкой JSON
             gifts = JSON.parse(user.gifts);
         } catch(e) {
-            // Если сохранено через запятую: "bear.png,car.png"
             gifts = user.gifts.split(',').map(g => g.trim());
         }
     }
@@ -362,14 +345,12 @@ function renderGifts() {
     }
 
     gifts.forEach((gift) => {
-        // Извлекаем имя файла, если там полный путь
         let giftFile = typeof gift === 'object' && gift.img ? gift.img : String(gift);
         giftFile = giftFile.split('/').pop();
 
         const slot = document.createElement('div');
         slot.className = 'inventory-slot active-item';
         
-        // По клику на подарок открываем инфо (или можно сделать кастомное действие)
         slot.onclick = () => {
             const info = ITEMS[giftFile] || { name: giftFile.split('.')[0] || "Подарок", price: 0 };
             document.getElementById('modal-img').src = `img/${giftFile}`;
@@ -430,7 +411,8 @@ async function withdrawToBot() {
     const currentStars = user.stars || 0;
     
     const it = user.inventory[selectedIdx];
-    const fileName = it.img.split('/').pop();
+    const imgPath = typeof it === 'string' ? it : (it?.img || 'star.png');
+    const fileName = imgPath.split('/').pop();
     const info = ITEMS[fileName] || { name: "Rare Item" };
 
     const createOrderRecord = async () => {
@@ -439,7 +421,7 @@ async function withdrawToBot() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 user_id: userId, 
-                item_img: it.img, 
+                item_img: imgPath, 
                 item_name: info.name 
             })
         });
@@ -452,7 +434,7 @@ async function withdrawToBot() {
             isProcessing = true;
             closeModal();
             
-            await _supabase.from('users').update({ pending_item: it.img }).eq('user_id', userId);
+            await _supabase.from('users').update({ pending_item: imgPath }).eq('user_id', userId);
 
             try {
                 const response = await fetch('/api/create_stars_pay', {
@@ -524,7 +506,8 @@ async function sellItem() {
     if (!user || selectedIdx === -1 || isProcessing) return;
 
     const it = user.inventory[selectedIdx];
-    const fileName = it.img.split('/').pop();
+    const imgPath = typeof it === 'string' ? it : (it?.img || 'star.png');
+    const fileName = imgPath.split('/').pop();
     const info = ITEMS[fileName] || { name: "Rare Item", price: 100 };
 
     tg.showConfirm(`Продать предмет "${info.name}" за ${info.price} ⭐?`, async (ok) => {
@@ -563,13 +546,13 @@ async function sellItem() {
 function openItem(i) {
     selectedIdx = i;
     const it = user.inventory[i];
-    const fileName = it.img.split('/').pop();
+    const imgPath = typeof it === 'string' ? it : (it?.img || 'star.png');
+    const fileName = imgPath.split('/').pop();
     const info = ITEMS[fileName] || { name: "Rare Item", price: 100 };
     
     document.getElementById('modal-img').src = `img/${fileName}`;
     document.getElementById('modal-name').innerText = info.name;
     
-    // Сброс кастомных блокировок стилей кнопок модалки
     const sellBtn = document.getElementById('sell-btn');
     sellBtn.innerText = `ПРОДАТЬ ЗА ${info.price} ⭐`;
     sellBtn.style.opacity = "1";

@@ -631,27 +631,50 @@
         });
     }
 
-    window.handleHero = function(id) {
-        const h = heroes.find(x => x.id === id);
-        if (state.ownedHeroes.includes(id)) {
-            state.activeHeroId = id;
-            applyHeroVisuals(); 
-            renderSkins(); 
-            updateUI(); 
-            triggerSaveProcess();
-            return;
-        }
-
-        if (state.points >= h.price) {
-            state.points -= h.price;
-            state.ownedHeroes.push(id);
-            state.activeHeroId = id;
-            applyHeroVisuals();
-            renderSkins();
-            updateUI();
-            triggerSaveProcess();
-        }
+window.handleHero = function(id) {
+    const h = heroes.find(x => x.id === id);
+    
+    // Если скин уже куплен, просто выбираем его (без сброса)
+    if (state.ownedHeroes.includes(id)) {
+        state.activeHeroId = id;
+        applyHeroVisuals(); 
+        renderSkins(); 
+        updateUI(); 
+        triggerSaveProcess();
+        return;
     }
+
+    // Если скин не куплен, запускаем механику Ребёртха через Telegram Popup
+    if (state.points >= h.price) {
+        tg.showPopup({
+            title: 'Покупка скина',
+            message: `Вы уверены? При покупке этого скина ваш баланс и улучшения сбросятся до нуля, но вы получите множитель x${h.x} навсегда!`,
+            buttons: [
+                {id: 'buy', type: 'destructive', text: 'Купить и сбросить'},
+                {type: 'cancel', text: 'Отмена'}
+            ]
+        }, (buttonId) => {
+            if (buttonId === 'buy') {
+                // Полный сброс прогресса (Ребёртх)
+                state.points = 0;
+                state.marketLevels = {}; // Сброс всех апгрейдов в маркете
+                state.clickPower = 1;    // Сброс силы клика до начальной
+                state.maxEnergy = 1000;  // Сброс лимита энергии
+                state.energy = 1000;     // Восстанавливаем энергию
+                
+                // Награждаем новым скином
+                state.ownedHeroes.push(id);
+                state.activeHeroId = id;
+                
+                // Обновляем визуал, интерфейс и принудительно сохраняем в БД
+                applyHeroVisuals();
+                renderSkins();
+                updateUI();
+                triggerSaveProcess();
+            }
+        });
+    }
+}
 
     async function goBackWithSave() {
         localStorage.setItem('nova_engine_save', JSON.stringify(state));

@@ -366,7 +366,10 @@
         { id: 16, name: "Облачный кластер", baseAdd: 80000, basePrice: 300000, icon: "☁️", type: "click" },
         { id: 17, name: "NFT-Маркетплейс", baseAdd: 160000, basePrice: 600000, icon: "🖼️", type: "click" },
         { id: 18, name: "Квантовый процессор", baseAdd: 350000, basePrice: 1200000, icon: "⚛️", type: "click" },
-        { id: 19, name: "Мастер-нода Nova", baseAdd: 800000, basePrice: 2500000, icon: "👑", type: "click" }
+        { id: 19, name: "Мастер-нода Nova", baseAdd: 800000, basePrice: 2500000, icon: "👑", type: "click" },
+        { id: 20, name: "Турбо-зарядка", baseAdd: 1, basePrice: 5000, icon: "⚡", type: "regen" }, 
+        { id: 21, name: "Полный бак", baseAdd: 0, basePrice: 10000000, icon: "🔋", type: "full_charge" }
+];
     ];
 
     let state = {
@@ -378,6 +381,7 @@
         clickPower: 1,
         marketLevels: {},
         lastUnix: Date.now()
+        lastChargeUnix: 0 // <- ДОБАВЬ ЭТУ СТРОЧКУ
     };
 
     // 1. ЗАГРУЗКА ВСЕХ ДАННЫХ ИЗ ТВОЕГО БЭКЕНДА
@@ -471,15 +475,20 @@
         startLoops();
     }
 
-    function startLoops() {
-        setInterval(() => {
-            if (state.energy < state.maxEnergy) {
-                state.energy = Math.min(state.maxEnergy, state.energy + 1);
-                updateUI();
-            }
-        }, 1000);
-        setInterval(triggerSaveProcess, 15000); // Раз в 15 секунд бэкапим в базу
-    }
+function startLoops() {
+    setInterval(() => {
+        if (state.energy < state.maxEnergy) {
+            // Уровень карточки "Турбо-зарядка" (id: 20). Если не куплена — 0.
+            const regenLvl = state.marketLevels[20] || 0; 
+            // Базовая регенерация 1 + по 1 за каждый уровень улучшения
+            const energyToRegen = 1 + regenLvl; 
+
+            state.energy = Math.min(state.maxEnergy, state.energy + energyToRegen);
+            updateUI();
+        }
+    }, 1000);
+    setInterval(triggerSaveProcess, 15000); 
+}
 
     const tapZone = document.getElementById('tap-zone');
     const heroImg = document.getElementById('hero-img');
@@ -532,49 +541,94 @@ function handleTapLogic(x, y) {
         setTimeout(() => p.remove(), 800);
     }
 
-    function renderMarket() {
-        const container = document.getElementById('market-list');
-        container.innerHTML = '';
-        
-        marketData.forEach((item, index) => {
-            const lvl = state.marketLevels[item.id] || 0;
-            const maxLvl = item.type === 'energy' ? 5 : 15;
-            const isMax = lvl >= maxLvl;
-            
-            const price = isMax ? 0 : Math.floor(item.basePrice * Math.pow(1.6, lvl));
-            
-            let bonusText = '';
-            if (item.type === 'click') {
-                bonusText = '+' + (item.baseAdd * (lvl + 1)) + ' к клику';
-            } else {
-                bonusText = '+' + item.baseAdd + ' к макс. энергии';
-            }
-
-            const isLocked = index > 0 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
-            
-            container.innerHTML += `
-                <div class="card-item ${isLocked ? 'locked' : ''}">
-                    <span class="card-icon">${item.icon}</span>
-                    <div class="card-title">${isLocked ? '???' : item.name}</div>
-                    <div class="card-desc">${isLocked ? '????' : (isMax ? 'УРОВЕНЬ МАКСИМАЛЕН' : bonusText)}</div>
-                    <button class="btn-action btn-buy" 
-                        ${(isLocked || state.points < price || isMax) ? 'disabled' : ''} 
-                        onclick="buyMarketItem(${item.id})">
-                        ${isMax ? 'МАКС' : price.toLocaleString()}
-                    </button>
-                </div>`;
-        });
-    }
-
-    window.buyMarketItem = function(id) {
-        const item = marketData.find(i => i.id === id);
+function renderMarket() {
+    const container = document.getElementById('market-list');
+    container.innerHTML = '';
+    
+    marketData.forEach((item, index) => {
         const lvl = state.marketLevels[item.id] || 0;
-        const maxLvl = item.type === 'energy' ? 5 : 15;
         
-        if (lvl >= maxLvl) return;
+        // Настройка максимальных уровней
+        let maxLvl = 15;
+        if (item.type === 'energy') maxLvl = 5;
+        if (item.type === 'regen') maxLvl = 10; // Макс уровень для турбо-регенерации
+        if (item.type === 'full_charge') maxLvl = 999999; // Можно покупать бесконечно
         
-        const price = Math.floor(item.basePrice * Math.pow(1.6, lvl));
-        if (state.points >= price) {
+        const isMax = lvl >= maxLvl;
+        
+        // Расчет цены (для фиксированной за 10 лямов оставляем статичной)
+        const price = (item.type === 'full_charge') ? item.basePrice : (isMax ? 0 : Math.floor(item.basePrice * Math.pow(1.6, lvl)));
+        
+        // Текст описания бонуса
+        let bonusText = '';
+        let isDisabled = state.points < price || isMax;
+
+        if (item.type === 'click') {
+            bonusText = '+' + (item.baseAdd * (lvl + 1)) + ' к клику';
+        } else if (item.type === 'energy') {
+            bonusText = '+' + item.baseAdd + ' к макс. энергии';
+        } else if (item.type === 'regen') {
+            bonusText = `+${1 + lvl + 1} ед/сек (Сейчас: +${1 + lvl})`;
+        } else if (item.type === 'full_charge') {
+            // Проверка таймера «раз в час»
+            const now = Date.now();
+            const msPassed = now - state.lastChargeUnix;
+            const hourInMs = 60 * 60 * 1000; // 1 час в миллисекундах
+
+            if (msPassed < hourInMs) {
+                const timeLeft = Math.ceil((hourInMs - msPassed) / 1000 / 60);
+                bonusText = `Доступно через ${timeLeft} мин.`;
+                isDisabled = true; // Блокируем кнопку, если час не прошёл
+            } else {
+                bonusText = 'Мгновенно восстановит 100% энергии';
+            }
+        }
+
+        const isLocked = index > 0 && index < 20 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
+        
+        container.innerHTML += `
+            <div class="card-item ${isLocked ? 'locked' : ''}">
+                <span class="card-icon">${item.icon}</span>
+                <div class="card-title">${isLocked ? '???' : item.name}</div>
+                <div class="card-desc">${isLocked ? '????' : (isMax ? 'УРОВЕНЬ МАКСИМАЛЕН' : bonusText)}</div>
+                <button class="btn-action btn-buy" 
+                    ${(isLocked || isDisabled) ? 'disabled' : ''} 
+                    onclick="buyMarketItem(${item.id})">
+                    ${isMax ? 'МАКС' : (item.type === 'full_charge' && (Date.now() - state.lastChargeUnix < 60*60*1000) ? 'КД' : price.toLocaleString())}
+                </button>
+            </div>`;
+    });
+}
+
+window.buyMarketItem = function(id) {
+    const item = marketData.find(i => i.id === id);
+    const lvl = state.marketLevels[item.id] || 0;
+    
+    let maxLvl = 15;
+    if (item.type === 'energy') maxLvl = 5;
+    if (item.type === 'regen') maxLvl = 10;
+    if (item.type === 'full_charge') maxLvl = 999999;
+    
+    if (lvl >= maxLvl) return;
+    
+    // Вычисляем цену
+    const price = (item.type === 'full_charge') ? item.basePrice : Math.floor(item.basePrice * Math.pow(1.6, lvl));
+    
+    if (state.points >= price) {
+        // Дополнительная проверка времени для полной зарядки
+        if (item.type === 'full_charge') {
+            const now = Date.now();
+            if (now - state.lastChargeUnix < 60 * 60 * 1000) {
+                alert("Эту карточку можно покупать только раз в час!");
+                return; 
+            }
+            // Списываем монеты, восстанавливаем энергию, обновляем таймер покупки
+            state.points -= price;
+            state.energy = state.maxEnergy;
+            state.lastChargeUnix = now;
+            
+        } else {
+            // Стандартная логика для накопительных карточек
             state.points -= price;
             state.marketLevels[id] = lvl + 1;
             
@@ -583,13 +637,14 @@ function handleTapLogic(x, y) {
             } else if (item.type === 'energy') {
                 state.maxEnergy += item.baseAdd;
                 state.energy += item.baseAdd; 
-            }
-            
-            renderMarket(); 
-            updateUI(); 
-            triggerSaveProcess(); // При покупке улучшения сразу сохраняем в БД
+            } filter: // При типе "regen" нам ничего менять в моменте не нужно, сработает новый startLoops
         }
+        
+        renderMarket(); 
+        updateUI(); 
+        triggerSaveProcess(); // Сразу бэкапим на сервер
     }
+}
 
     function renderSkins() {
         const container = document.getElementById('skin-list');

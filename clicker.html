@@ -249,10 +249,10 @@
 
 <div class="app-shell">
     <div class="top-nav">
-        <div onclick="window.location.href='index.html'" class="btn-back">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            НАЗАД
-        </div>
+ <div onclick="goBackWithSave()" class="btn-back">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    НАЗАД
+</div>
         <button class="btn-info-star" onclick="openPanel('info-panel', this)">
             КАК ПОЛУЧИТЬ STAR?
         </button>
@@ -609,6 +609,25 @@ function handleTapLogic(x, y) {
                 </div>`;
         });
     }
+
+    async function goBackWithSave() {
+    // 1. Сначала сохраняем всё локально (на всякий случай)
+    localStorage.setItem('nova_engine_save', JSON.stringify(state));
+    
+    // 2. Меняем текст кнопки, чтобы юзер видел, что игра сохраняется
+    const backBtn = document.querySelector('.btn-back');
+    if (backBtn) backBtn.innerHTML = 'СОХРАНЕНИЕ...';
+
+    try {
+        // 3. Ждем, пока бэкенд примет данные (используем await!)
+        await saveToDB();
+    } catch (e) {
+        console.error("Не удалось сохранить на сервер при выходе, но локально сохранено:", e);
+    }
+
+    // 4. Только после этого уходим на главную
+    window.location.href = 'index.html';
+}
 
     window.handleHero = function(id) {
         const h = heroes.find(x => x.id === id);

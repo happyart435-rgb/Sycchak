@@ -433,7 +433,7 @@
         } catch (e) { list.innerHTML = '<div style="text-align:center; padding:30px; color:red;">Ошибка загрузки топа</div>'; }
     }
 
-    async function init() {
+   async function init() {
         const saved = localStorage.getItem('nova_engine_save');
         if (saved) {
             const parsed = JSON.parse(saved);
@@ -441,6 +441,14 @@
             const elapsed = Math.floor((Date.now() - state.lastUnix) / 1000);
             state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
         }
+        
+        // ДОБАВЛЕНО: привязка обработчика клика к картинке
+        const heroImg = document.getElementById('hero-img');
+        heroImg.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            handleTapLogic(e.clientX, e.clientY);
+        });
+
         await loadFromDB();
         updateUI();
         startLoops();
@@ -458,6 +466,7 @@
 
     const tapZone = document.getElementById('tap-zone');
     const heroImg = document.getElementById('hero-img');
+    
 
     let lastTapTime = 0;
 let isOverheated = false;

@@ -226,6 +226,23 @@
     filter: brightness(0) !important;
     opacity: 0.3;
 }
+
+
+        /* Эффект красного мигания экрана */
+.overheat-flash {
+    animation: flash-red 0.5s ease infinite;
+}
+@keyframes flash-red {
+    0%, 100% { background-color: var(--bg-start); }
+    50% { background-color: #500; }
+}
+
+/* Контейнер для текста предупреждения */
+#overheat-msg {
+    position: absolute; top: 30%; color: #ff3333; font-weight: 900;
+    font-size: 20px; text-shadow: 0 0 10px #f00; opacity: 0;
+    transition: opacity 0.3s; z-index: 20;
+}
     </style>
 </head>
 <body>
@@ -254,6 +271,9 @@
         </div>
     </div>
     <div class="game-core" id="tap-zone">
+
+<div id="overheat-msg">⚠️ БАТАРЕЯ ПЕРЕГРЕТА! ⚠️</div>
+        
         <div class="hero-platform"></div>
         <img src="pepe1.png" id="hero-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
     </div>
@@ -442,26 +462,53 @@
     const tapZone = document.getElementById('tap-zone');
     const heroImg = document.getElementById('hero-img');
 
-    function handleTapLogic(x, y) {
-        if (state.energy < 1) return;
-        if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+    let lastTapTime = 0;
+let isOverheated = false;
 
-        heroImg.classList.add('tap-anim');
-        setTimeout(() => heroImg.classList.remove('tap-anim'), 50);
-        
-        const hero = heroes.find(h => h.id === state.activeHeroId);
-        const profit = state.clickPower * (hero ? hero.x : 1);
-        
-        state.points += profit;
-        state.energy -= 1;
-        state.lastUnix = Date.now();
-        
-        showPop(x, y, profit);
-        updateUI();
-        
-        if(state.points % 100 === 0) save();
+function handleTapLogic(x, y) {
+    const now = Date.now();
+    const timeDiff = now - lastTapTime;
+    
+    // Если кликают чаще 100мс — включаем перегрев
+    if (timeDiff < 100) {
+        triggerOverheat();
     }
+    lastTapTime = now;
 
+    // Расход энергии (в 50 раз быстрее при перегреве)
+    const energyCost = isOverheated ? 50 : 1;
+    if (state.energy < energyCost) return;
+
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+
+    heroImg.classList.add('tap-anim');
+    setTimeout(() => heroImg.classList.remove('tap-anim'), 50);
+    
+    const hero = heroes.find(h => h.id === state.activeHeroId);
+    const profit = state.clickPower * (hero ? hero.x : 1);
+    
+    state.points += profit;
+    state.energy -= energyCost;
+    
+    showPop(x, y, profit);
+    updateUI();
+}
+
+function triggerOverheat() {
+    if (isOverheated) return;
+    isOverheated = true;
+    
+    const msg = document.getElementById('overheat-msg');
+    document.body.classList.add('overheat-flash');
+    msg.style.opacity = '1';
+    
+    // Выключаем перегрев через 5 секунд
+    setTimeout(() => {
+        isOverheated = false;
+        document.body.classList.remove('overheat-flash');
+        msg.style.opacity = '0';
+    }, 5000);
+}
     tapZone.addEventListener('touchstart', (e) => {
         e.preventDefault();
         for (let i = 0; i < e.changedTouches.length; i++) {

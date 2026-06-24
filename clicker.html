@@ -329,6 +329,7 @@
 ];
 
     const marketData = [
+        { id: -1, name: "Батарейка", baseAdd: 500, basePrice: 1000, icon: "🔋", type: "energy" },
     { id: 0, name: "Курсор", baseAdd: 1, basePrice: 50, icon: "🖱️", type: "click" },
     { id: 1, name: "Клик-бот", baseAdd: 2, basePrice: 80, icon: "🤖", type: "click" },
     { id: 2, name: "Прокси-сервер", baseAdd: 5, basePrice: 120, icon: "📡", type: "click" },
@@ -503,19 +504,29 @@
 }
 
     window.buyMarketItem = function(id) {
-        const item = marketData.find(i => i.id === id);
-        const lvl = state.marketLevels[item.id] || 0;
-        if (lvl >= 15) return;
+    const item = marketData.find(i => i.id === id);
+    const lvl = state.marketLevels[item.id] || 0;
+    // Ограничим уровень батарейки, чтобы не сломать баланс
+    if (item.type === 'energy' && lvl >= 5) return; 
+    if (item.type === 'click' && lvl >= 15) return;
+    
+    const price = Math.floor(item.basePrice * Math.pow(1.6, lvl));
+    if (state.points >= price) {
+        state.points -= price;
+        state.marketLevels[id] = lvl + 1;
         
-        const price = Math.floor(item.basePrice * Math.pow(1.6, lvl));
-        if (state.points >= price) {
-            state.points -= price;
-            state.marketLevels[id] = lvl + 1;
-            if (item.type === 'click') state.clickPower += item.baseAdd;
-            else { state.maxEnergy += item.baseAdd; state.energy += item.baseAdd; }
-            renderMarket(); updateUI(); save();
+        if (item.type === 'click') {
+            state.clickPower += item.baseAdd;
+        } else if (item.type === 'energy') {
+            state.maxEnergy += item.baseAdd;
+            state.energy += item.baseAdd; // Восполняем при покупке
         }
+        
+        renderMarket(); 
+        updateUI(); 
+        save();
     }
+}
 
     function renderSkins() {
         const container = document.getElementById('skin-list');

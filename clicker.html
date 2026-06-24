@@ -475,20 +475,26 @@
         const now = Date.now();
         const timeDiff = now - lastTapTime;
         
-        if (timeDiff < 50) {
+        // Если клики приходят чаще 30мс (реально быстро) — это подозрительно
+        if (timeDiff < 30) {
             tapCount++;
         } else {
-            tapCount = 0;
+            // Если пауза между сериями нажатий больше 100мс, сбрасываем счетчик
+            if (timeDiff > 100) tapCount = 0; 
         }
 
-        if (tapCount > 6) {
+        // Если нажали очень много раз подряд (например, больше 10-12) — активируем перегрев
+        if (tapCount > 12) {
             triggerOverheat();
         }
         
         lastTapTime = now;
 
+        // ... (остальной код функции без изменений)
         const energyCost = isOverheated ? 50 : 1;
         if (state.energy < energyCost) return;
+        // ...
+    }
 
         if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
 

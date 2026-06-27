@@ -554,21 +554,7 @@ function handleTapLogic(e) {
     }
 }
 
-// Инициализация событий (замените в функции init)
-const heroImgEl = document.getElementById('hero-img');
 
-heroImgEl.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    handleTapLogic(e);
-});
-
-heroImgEl.addEventListener('pointerup', (e) => {
-    activePointers.delete(e.pointerId);
-});
-
-heroImgEl.addEventListener('pointercancel', (e) => {
-    activePointers.delete(e.pointerId);
-});
 
     
 function showPop(x, y, val) {
@@ -773,16 +759,14 @@ window.handleHero = function(id) {
         state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
     }
     
-    // --- ИСПРАВЛЕННЫЙ БЛОК ---
+    // Правильная привязка событий здесь
     const heroImgEl = document.getElementById('hero-img');
-    
-    // Убираем старую привязку, если она была, и ставим новую
-    heroImgEl.onpointerdown = null; 
-    heroImgEl.addEventListener('pointerdown', (e) => {
+    heroImgEl.onpointerdown = (e) => {
         e.preventDefault();
-        handleTapLogic(e); // Передаем всё событие 'e', а не координаты
-    });
-    // -------------------------
+        handleTapLogic(e);
+    };
+    heroImgEl.onpointerup = (e) => activePointers.delete(e.pointerId);
+    heroImgEl.onpointercancel = (e) => activePointers.delete(e.pointerId);
 
     await loadFromDB();
     updateUI();

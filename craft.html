@@ -367,7 +367,10 @@ const tg = window.Telegram.WebApp;
             itemNode.innerHTML = `
                 <img src="${IMAGE_FOLDER}${item.img}" class="inv-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
                 <div class="inv-name">${item.name} (${count} шт.)</div>
-                <div class="inv-price">$${item.price}</div>
+                <div class="inv-price" style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+    <img src="${IMAGE_FOLDER}star.png" style="width: 12px; height: 12px; object-fit: contain;">
+    ${item.price}
+</div>
             `;
             itemNode.onclick = () => selectGiftForActiveSlot(key);
             listContainer.appendChild(itemNode);

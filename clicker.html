@@ -576,7 +576,7 @@ function showPop(x, y, val) {
             }
 
 // ... (оставляем логику как есть до самого конца функции
-            const isLocked = index > 0 && index < 20 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
+            const isLocked = index > 0 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
             
             container.innerHTML += `
                 <div class="card-item ${isLocked ? 'locked' : ''}">
@@ -632,23 +632,29 @@ function showPop(x, y, val) {
     }
 
 function renderSkins() {
-        const container = document.getElementById('skin-list');
-        container.innerHTML = '';
-        heroes.forEach(h => {
-            const isOwned = state.ownedHeroes.includes(h.id);
-            const isActive = state.activeHeroId === h.id;
-            container.innerHTML += `
-                <div class="card-item ${isActive ? 'active-item' : ''}">
-                    <img src="${h.img}" class="card-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
-                    <div class="card-desc" style="margin-top: 10px;">МНОЖИТЕЛЬ x${h.x}</div>
-                    <button class="btn-action ${isOwned ? 'btn-owned' : 'btn-buy'}" 
-                            ${(!isOwned && state.points < h.price) ? 'disabled' : ''} 
-                            onclick="handleHero(${h.id})">
-                        ${isOwned ? (isActive ? 'АКТИВЕН' : 'ВЫБРАТЬ') : formatNumber(h.price)}
-                    </button>
-                </div>`;
-        });
-    }
+    const container = document.getElementById('skin-list');
+    container.innerHTML = '';
+    heroes.forEach(h => {
+        const isOwned = state.ownedHeroes.includes(h.id);
+        const isActive = state.activeHeroId === h.id;
+        
+        // Проверка: можно купить, только если это первый герой (id 0) 
+        // или если предыдущий герой уже куплен
+        const isPrevOwned = h.id === 0 || state.ownedHeroes.includes(h.id - 1);
+        const canBuy = !isOwned && state.points >= h.price && isPrevOwned;
+
+        container.innerHTML += `
+            <div class="card-item ${isActive ? 'active-item' : ''} ${!isPrevOwned ? 'locked' : ''}">
+                <img src="${h.img}" class="card-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
+                <div class="card-desc" style="margin-top: 10px;">${isPrevOwned ? 'МНОЖИТЕЛЬ x' + h.x : 'ЗАКРЫТО'}</div>
+                <button class="btn-action ${isOwned ? 'btn-owned' : 'btn-buy'}" 
+                        ${(!isOwned && (!canBuy || state.points < h.price)) ? 'disabled' : ''} 
+                        onclick="handleHero(${h.id})">
+                    ${isOwned ? (isActive ? 'АКТИВЕН' : 'ВЫБРАТЬ') : (isPrevOwned ? formatNumber(h.price) : '???')}
+                </button>
+            </div>`;
+    });
+}
 
 window.handleHero = function(id) {
         const h = heroes.find(x => x.id === id);

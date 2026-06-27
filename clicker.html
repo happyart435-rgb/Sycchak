@@ -240,6 +240,7 @@
     position: absolute; top: 30%; color: #ff3333; font-weight: 900;
     font-size: 20px; text-shadow: 0 0 10px #f00; opacity: 0;
     transition: opacity 0.3s; z-index: 20;
+    pointer-events: none; 
 }
     </style>
 </head>
@@ -504,12 +505,11 @@ function startLoops() {
     setInterval(triggerSaveProcess, 15000); 
 }
 
-    const tapZone = document.getElementById('tap-zone');
-    const heroImg = document.getElementById('hero-img');
-    let isOverheated = false;
-
-    let tapHistory = []; // Храним время последних кликов
+    
+const tapZone = document.getElementById('tap-zone');
+const heroImg = document.getElementById('hero-img');
 let isOverheated = false;
+let tapHistory = []; 
 let overheatTimer = null;
 
 function handleTapLogic(x, y) {
@@ -771,13 +771,16 @@ window.handleHero = function(id) {
             state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
         }
         
-        const heroImgEl = document.getElementById('hero-img');
-        heroImgEl.addEventListener('pointerdown', (e) => {
+        const tapZone = document.getElementById('tap-zone');
+    tapZone.addEventListener('pointerdown', (e) => {
+        // Проверяем, что нажатие было именно в зоне игры
+        if (e.target.id === 'hero-img' || e.target.id === 'tap-zone') {
             e.preventDefault();
             handleTapLogic(e.clientX, e.clientY);
-        });
+        }
+    });
 
-        await loadFromDB();
+    await loadFromDB();
         updateUI();
         applyHeroVisuals();
         startLoops();

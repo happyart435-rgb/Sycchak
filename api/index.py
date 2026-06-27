@@ -48,6 +48,7 @@ def add_cors_headers(response):
     return response
 
 # --- ПОЛУЧЕНИЕ ИНВЕНТАРЯ ---
+# --- ПОЛУЧЕНИЕ ИНВЕНТАРЯ (СТРОГИЙ СТРИНГ-РЕЖИМ) ---
 @app.route('/api/get_inventory', methods=['GET', 'OPTIONS'])
 def get_inventory():
     if request.method == 'OPTIONS':
@@ -69,22 +70,31 @@ def get_inventory():
             if not isinstance(raw_inventory, list):
                 raw_inventory = []
             
-            cleaned_inventory = []
-            # Перебираем инвентарь и исправляем кривые данные
+            cleaned_string_inventory = []
+            has_bad_data = False
+
             for item in raw_inventory:
                 if isinstance(item, str):
-                    # Если это просто строка (например, "happybirthday.jpg"), превращаем в объект
-                    cleaned_inventory.append({
-                        "id": random.randint(1000000, 9999999), # временный id
-                        "img": f"img/{item}" if not item.startswith("img/") else item,
-                        "name": item.split('.')[0].capitalize(), # имя из названия файла
-                        "price": giftDatabase.get(item, {}).get("price", 0) # берем цену из базы
-                    })
+                    # Если в базе лежит полный путь типа "img/soska.jpg", убираем префикс, 
+                    # потому что твой фронтенд сам добавляет IMAGE_FOLDER ('img/')
+                    clean_name = item.replace("img/", "")
+                    cleaned_string_inventory.append(clean_name)
                 elif isinstance(item, dict):
-                    # Если это уже правильный объект, просто оставляем его
-                    cleaned_inventory.append(item)
+                    # Если в базу закрался объект, вытаскиваем из него только имя файла
+                    img_path = item.get("img", "star.png")
+                    clean_name = img_path.replace("img/", "")
+                    cleaned_string_inventory.append(clean_name)
+                    has_bad_data = True  # Заметили грязь в базе
+
+            # Если в базе был мусор из объектов, автоматически перезаписываем её чистыми строками
+            if has_bad_data:
+                try:
+                    supabase.table("users").update({"inventory": cleaned_string_inventory}).eq("user_id", query_id).execute()
+                except Exception:
+                    pass
+
+            return jsonify({"success": True, "inventory": cleaned_string_inventory}), 200
             
-            return jsonify({"success": True, "inventory": cleaned_inventory}), 200
         return jsonify({"success": True, "inventory": []}), 200
     except Exception as e:
         return jsonify({"error": "Server error", "details": str(e)}), 500

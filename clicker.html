@@ -335,6 +335,7 @@
     const BACKEND_URL = 'https://sycchak.vercel.app/api'; 
     tg.expand();
 
+
 const heroes = [
     { id: 0, x: 1, price: 0, img: "img/Новая папка (3)/pepe1.png", color: "#facc15", bg: "#1a1605" },
     { id: 1, x: 3, price: 1500000, img: "img/Новая папка (3)/pepe2.png", color: "#facc15", bg: "#2a250f" },
@@ -507,25 +508,60 @@ function startLoops() {
     const heroImg = document.getElementById('hero-img');
     let isOverheated = false;
 
-    function handleTapLogic(x, y) {
-        const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
-        const tapCost = 1; // Расход энергии за 1 тап
+    let tapHistory = []; // Храним время последних кликов
+let isOverheated = false;
+let overheatTimer = null;
 
-        if (state.energy >= tapCost) {
-            state.energy -= tapCost;
-            const earned = state.clickPower * currentHero.x;
-            state.points += earned;
+function handleTapLogic(x, y) {
+    const now = Date.now();
+    tapHistory.push(now);
+    
+    // Оставляем в истории только клики за последнюю секунду
+    tapHistory = tapHistory.filter(time => now - time < 1000);
 
-            const img = document.getElementById('hero-img');
-            img.classList.add('tap-anim');
-            setTimeout(() => img.classList.remove('tap-anim'), 50);
-
-            showPop(x, y, earned);
-            updateUI();
-        } else {
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-        }
+    // Если кликов больше 25 в секунду -> перегрев
+    if (tapHistory.length > 25 && !isOverheated) {
+        triggerOverheat();
     }
+
+    const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
+    
+    // Если перегрев, расход энергии в 50 раз больше
+    const tapCost = isOverheated ? 50 : 1; 
+
+    if (state.energy >= tapCost) {
+        state.energy -= tapCost;
+        const earned = state.clickPower * currentHero.x;
+        state.points += earned;
+
+        const img = document.getElementById('hero-img');
+        img.classList.add('tap-anim');
+        setTimeout(() => img.classList.remove('tap-anim'), 50);
+
+        showPop(x, y, earned);
+        updateUI();
+    } else {
+        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+    }
+}
+
+function triggerOverheat() {
+    isOverheated = true;
+    const msg = document.getElementById('overheat-msg');
+    const body = document.body;
+
+    // Включаем визуальные эффекты
+    msg.style.opacity = 1;
+    body.classList.add('overheat-flash');
+
+    // Сбрасываем перегрев через 5 секунд
+    clearTimeout(overheatTimer);
+    overheatTimer = setTimeout(() => {
+        isOverheated = false;
+        msg.style.opacity = 0;
+        body.classList.remove('overheat-flash');
+    }, 5000);
+}
 
 function showPop(x, y, val) {
         const p = document.createElement('div');

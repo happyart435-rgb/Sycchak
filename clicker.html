@@ -508,29 +508,33 @@ function startLoops() {
     
 const tapZone = document.getElementById('tap-zone');
 const heroImg = document.getElementById('hero-img');
-let isOverheated = false;
-let tapHistory = []; 
-let overheatTimer = null;
+let lastTapTime = 0;
+let fastTapCount = 0; // Счетчик подозрительно быстрых кликов
 
 function handleTapLogic(x, y) {
     const now = Date.now();
-    tapHistory.push(now);
-    
-    // Оставляем в истории только клики за последнюю секунду
-    tapHistory = tapHistory.filter(time => now - time < 1000);
+    const delta = now - lastTapTime;
+    lastTapTime = now;
 
-    // Если кликов больше 25 в секунду -> перегрев
-    if (tapHistory.length > 25 && !isOverheated) {
-        triggerOverheat();
+    // --- ЛОГИКА ЗАЩИТЫ ---
+    // Если клики происходят быстрее, чем каждые 40мс (25 кликов/сек), 
+    // считаем это автокликером.
+    if (delta < 40) {
+        fastTapCount++;
+    } else {
+        // Если человек делает паузу, сбрасываем счетчик (но не до нуля сразу)
+        fastTapCount = Math.max(0, fastTapCount - 1);
     }
 
-    // --- ИСПРАВЛЕНИЕ: Блокировка начисления ---
-    if (isOverheated) {
-        // Если перегрев, очки не начисляются, энергия не тратится
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-        return; // ВАЖНО: это прерывает выполнение функции
+    if (fastTapCount > 10 || isOverheated) {
+        if (!isOverheated) triggerOverheat();
+        
+        // Уменьшаем энергию в 50 раз быстрее (например, отнимаем больше)
+        state.energy = Math.max(0, state.energy - 50); 
+        updateUI();
+        return; 
     }
-    // ------------------------------------------
+    // ----------------------
 
     const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
     const tapCost = 1; 
@@ -546,8 +550,6 @@ function handleTapLogic(x, y) {
 
         showPop(x, y, earned);
         updateUI();
-    } else {
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
     }
 }
 function triggerOverheat() {

@@ -335,10 +335,6 @@
     const BACKEND_URL = 'https://sycchak.vercel.app/api'; 
     tg.expand();
 
-let lastTapTime = 0;
-let tapCount = 0;
-let isSuspended = false;
-    
 const heroes = [
     { id: 0, x: 1, price: 0, img: "img/Новая папка (3)/pepe1.png", color: "#facc15", bg: "#1a1605" },
     { id: 1, x: 3, price: 1500000, img: "img/Новая папка (3)/pepe2.png", color: "#facc15", bg: "#2a250f" },
@@ -511,52 +507,26 @@ function startLoops() {
     const heroImg = document.getElementById('hero-img');
     let isOverheated = false;
 
-// Переменные для защиты
-let lastTapTime = 0;
-let tapCount = 0;
-let isSuspended = false;
-let activePointers = new Set(); 
+    function handleTapLogic(x, y) {
+        const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
+        const tapCost = 1; // Расход энергии за 1 тап
 
-function handleTapLogic(e) {
-    if (isSuspended) return;
+        if (state.energy >= tapCost) {
+            state.energy -= tapCost;
+            const earned = state.clickPower * currentHero.x;
+            state.points += earned;
 
-    // 1. Добавляем ID пальца
-    activePointers.add(e.pointerId);
-    
-    // 2. Убираем ограничение на 3 пальца, чтобы работало 5+
-    // Если нужно больше защиты от ботов, будем проверять только частоту событий
-    
-    const now = Date.now();
-    
-    // 3. Защита от автокликеров (интервал меньше 10мс между событиями)
-    // Человек даже 10 пальцами не создаст события чаще чем в 10-15мс
-    if (now - lastTapTime < 10 && activePointers.size === 1) {
-        return; 
+            const img = document.getElementById('hero-img');
+            img.classList.add('tap-anim');
+            setTimeout(() => img.classList.remove('tap-anim'), 50);
+
+            showPop(x, y, earned);
+            updateUI();
+        } else {
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+        }
     }
-    
-    lastTapTime = now;
-    
-    // 4. Логика начисления
-    const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
-    const tapCost = 1;
 
-    if (state.energy >= tapCost) {
-        state.energy -= tapCost;
-        const earned = state.clickPower * currentHero.x;
-        state.points += earned;
-
-        const img = document.getElementById('hero-img');
-        img.classList.add('tap-anim');
-        setTimeout(() => img.classList.remove('tap-anim'), 50);
-
-        showPop(e.clientX, e.clientY, earned);
-        updateUI();
-    }
-}
-
-
-
-    
 function showPop(x, y, val) {
         const p = document.createElement('div');
         p.className = 'click-pop';
@@ -606,7 +576,7 @@ function showPop(x, y, val) {
             }
 
 // ... (оставляем логику как есть до самого конца функции
-            const isLocked = index > 0 && index < 20 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
+            const isLocked = index > 0 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
             
             container.innerHTML += `
                 <div class="card-item ${isLocked ? 'locked' : ''}">
@@ -662,23 +632,29 @@ function showPop(x, y, val) {
     }
 
 function renderSkins() {
-        const container = document.getElementById('skin-list');
-        container.innerHTML = '';
-        heroes.forEach(h => {
-            const isOwned = state.ownedHeroes.includes(h.id);
-            const isActive = state.activeHeroId === h.id;
-            container.innerHTML += `
-                <div class="card-item ${isActive ? 'active-item' : ''}">
-                    <img src="${h.img}" class="card-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
-                    <div class="card-desc" style="margin-top: 10px;">МНОЖИТЕЛЬ x${h.x}</div>
-                    <button class="btn-action ${isOwned ? 'btn-owned' : 'btn-buy'}" 
-                            ${(!isOwned && state.points < h.price) ? 'disabled' : ''} 
-                            onclick="handleHero(${h.id})">
-                        ${isOwned ? (isActive ? 'АКТИВЕН' : 'ВЫБРАТЬ') : formatNumber(h.price)}
-                    </button>
-                </div>`;
-        });
-    }
+    const container = document.getElementById('skin-list');
+    container.innerHTML = '';
+    heroes.forEach(h => {
+        const isOwned = state.ownedHeroes.includes(h.id);
+        const isActive = state.activeHeroId === h.id;
+        
+        // Проверка: можно купить, только если это первый герой (id 0) 
+        // или если предыдущий герой уже куплен
+        const isPrevOwned = h.id === 0 || state.ownedHeroes.includes(h.id - 1);
+        const canBuy = !isOwned && state.points >= h.price && isPrevOwned;
+
+        container.innerHTML += `
+            <div class="card-item ${isActive ? 'active-item' : ''} ${!isPrevOwned ? 'locked' : ''}">
+                <img src="${h.img}" class="card-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
+                <div class="card-desc" style="margin-top: 10px;">${isPrevOwned ? 'МНОЖИТЕЛЬ x' + h.x : 'ЗАКРЫТО'}</div>
+                <button class="btn-action ${isOwned ? 'btn-owned' : 'btn-buy'}" 
+                        ${(!isOwned && (!canBuy || state.points < h.price)) ? 'disabled' : ''} 
+                        onclick="handleHero(${h.id})">
+                    ${isOwned ? (isActive ? 'АКТИВЕН' : 'ВЫБРАТЬ') : (isPrevOwned ? formatNumber(h.price) : '???')}
+                </button>
+            </div>`;
+    });
+}
 
 window.handleHero = function(id) {
         const h = heroes.find(x => x.id === id);
@@ -751,28 +727,26 @@ window.handleHero = function(id) {
     }
 
     async function init() {
-    const saved = localStorage.getItem('nova_engine_save');
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        state = { ...state, ...parsed };
-        const elapsed = Math.floor((Date.now() - state.lastUnix) / 1000);
-        state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
-    }
-    
-    // Правильная привязка событий здесь
-    const heroImgEl = document.getElementById('hero-img');
-    heroImgEl.onpointerdown = (e) => {
-        e.preventDefault();
-        handleTapLogic(e);
-    };
-    heroImgEl.onpointerup = (e) => activePointers.delete(e.pointerId);
-    heroImgEl.onpointercancel = (e) => activePointers.delete(e.pointerId);
+        const saved = localStorage.getItem('nova_engine_save');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            state = { ...state, ...parsed };
+            const elapsed = Math.floor((Date.now() - state.lastUnix) / 1000);
+            state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
+        }
+        
+        const heroImgEl = document.getElementById('hero-img');
+        heroImgEl.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            handleTapLogic(e.clientX, e.clientY);
+        });
 
-    await loadFromDB();
-    updateUI();
-    applyHeroVisuals();
-    startLoops();
-}
+        await loadFromDB();
+        updateUI();
+        applyHeroVisuals();
+        startLoops();
+    }
+
     window.onload = init;
 </script>
 </body>

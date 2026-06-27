@@ -9,7 +9,20 @@
     <style>
 
 /* Эффекты для DDoS */
+/* Окна как в image_7f6cb8.png */
+.win-error {
+    position: absolute; width: 280px; background: #c0c0c0; border: 2px outset #fff;
+    padding: 2px; z-index: 1000; font-family: 'Courier New', monospace;
+}
+.win-header { background: #000080; color: white; padding: 2px 5px; font-size: 12px; }
+.win-body { padding: 20px; color: black; text-align: center; font-weight: bold; }
+.win-btn { border: 2px outset #fff; background: #c0c0c0; padding: 2px 15px; }
 
+/* Красный дождь */
+.binary-rain {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+    color: #ff0000; font-family: monospace; font-size: 20px; z-index: 50; overflow: hidden;
+}
 
 /* Красное мигание для хакерской атаки */
 @keyframes red-flash {
@@ -99,6 +112,12 @@
         .main-coin { width: 45px; height: 45px; object-fit: contain; }
 
         .energy-container { margin-top: 25px; padding: 0 30px; }
+
+<div id="event-timer-container" style="display:none; text-align:center; margin: 10px 0;">
+    <div id="event-name" style="font-weight:900; font-size:14px; margin-bottom:5px;"></div>
+    <div id="event-timer" style="font-size:20px; font-weight:900;">30</div>
+</div>
+        
         .energy-bar-bg {
             width: 100%; height: 14px; background: rgba(255,255,255,0.1);
             border-radius: 20px; overflow: hidden; border: 1.5px solid rgba(250, 204, 21, 0.1);
@@ -433,6 +452,79 @@ const heroes = [
         lastChargeUnix: 0
     };
 
+
+let currentEvent = null;
+
+function runEvent(type, duration) {
+    if (currentEvent) return;
+    currentEvent = type;
+    const timerCont = document.getElementById('event-timer-container');
+    const nameEl = document.getElementById('event-timer');
+    timerCont.style.display = 'block';
+    
+    let timeLeft = duration;
+    
+    // Стили события
+    if (type === 'hack') {
+        nameEl.style.color = '#ff0000';
+        document.getElementById('event-name').innerText = "⚠️ ХАКЕРСКАЯ АТАКА";
+        startBinaryRain();
+    } else if (type === 'crash') {
+        nameEl.style.color = '#ff0000';
+        document.getElementById('event-name').innerText = "📉 КРАХ БИРЖИ";
+        document.body.style.filter = "sepia(1) hue-rotate(300deg)";
+    } else if (type === 'boom') {
+        nameEl.style.color = '#00ff00';
+        document.getElementById('event-name').innerText = "🚀 РАСЦВЕТ БИРЖИ";
+        state.clickPower *= 2;
+    }
+
+    const interval = setInterval(() => {
+        timeLeft--;
+        nameEl.innerText = timeLeft;
+        if (type === 'hack' && timeLeft % 3 === 0) spawnWinError();
+        
+        if (timeLeft <= 0) {
+            clearInterval(interval);
+            timerCont.style.display = 'none';
+            document.body.style.filter = "none";
+            if (type === 'boom') state.clickPower /= 2;
+            currentEvent = null;
+        }
+    }, 1000);
+}
+
+function spawnWinError() {
+    const div = document.createElement('div');
+    div.className = 'win-error';
+    div.style.left = (Math.random() * 50 + 25) + '%';
+    div.style.top = (Math.random() * 50 + 20) + '%';
+    div.innerHTML = `<div class="win-header">System message</div><div class="win-body">Critical error</div><button class="win-btn" onclick="this.parentElement.remove()">Ok</button>`;
+    document.body.appendChild(div);
+}
+
+function startBinaryRain() {
+    const rain = document.createElement('div');
+    rain.className = 'binary-rain';
+    document.body.appendChild(rain);
+    for(let i=0; i<20; i++) {
+        let span = document.createElement('div');
+        span.style.position = 'absolute';
+        span.style.left = Math.random() * 100 + '%';
+        span.innerText = Math.random() > 0.5 ? '1' : '0';
+        rain.appendChild(span);
+    }
+    setTimeout(() => rain.remove(), 30000);
+}
+
+// Блокировка клика
+function handleTapLogic(x, y) {
+    if (currentEvent === 'hack' || currentEvent === 'crash') return; // Нельзя зарабатывать
+    // Дальше твой стандартный код клика...
+}
+
+
+    
     function updateUI() {
         document.getElementById('balance-num').innerText = formatNumber(state.points);
         document.getElementById('energy-val').innerText = Math.floor(state.energy);

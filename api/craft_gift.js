@@ -32,68 +32,96 @@ const giftDatabase = {
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    try {
-        const { user_id, gift_keys } = req.body;
-        if (!user_id || !gift_keys || gift_keys.length !== 5) {
-            return res.status(400).json({ error: 'Передайте ровно 5 предметов.' });
+    // ==========================================
+    // ЛОГИКА ПОЛУЧЕНИЯ ИНВЕНТАРЯ (GET)
+    // ==========================================
+    if (req.method === 'GET') {
+        try {
+            const { user_id } = req.query;
+            if (!user_id) return res.status(400).json({ error: 'Не указан user_id' });
+
+            const { data: user, error: userError } = await supabase
+                .from('users')
+                .select('inventory')
+                .eq('user_id', String(user_id))
+                .single();
+
+            if (userError || !user) {
+                // Если юзера нет в базе, можно вернуть пустой массив, чтобы не крашить фронт
+                return res.status(200).json({ success: true, inventory: [] });
+            }
+
+            const inv = Array.isArray(user.inventory) ? user.inventory : [];
+            return res.status(200).json({ success: true, inventory: inv });
+        } catch (err) {
+            return res.status(500).json({ error: 'Ошибка сервера при получении инвентаря' });
         }
-
-        // 1. Считаем ОБЩУЮ стоимость всех подарков вместе
-        let totalPrice = 0;
-        for (const key of gift_keys) {
-            if (!giftDatabase[key]) return res.status(400).json({ error: `Предмет ${key} не найден.` });
-            totalPrice += giftDatabase[key].price;
-        }
-
-        // 2. Берем инвентарь из БД
-        const { data: user, error: userError } = await supabase.from('users').select('inventory').eq('user_id', user_id).single();
-        if (userError || !user) return res.status(404).json({ error: 'Пользователь не найден.' });
-
-        let currentInventory = Array.isArray(user.inventory) ? user.inventory : [];
-
-        // 3. Проверка и удаление 5 предметов
-        let tempInventory = [...currentInventory];
-        for (const key of gift_keys) {
-            const index = tempInventory.indexOf(key);
-            if (index === -1) return res.status(400).json({ error: 'Не хватает предметов в инвентаре!' });
-            tempInventory.splice(index, 1);
-        }
-        currentInventory = tempInventory;
-
-        // 4. Определение категории дропа (Рандом по твоим процентам)
-        const rand = Math.random() * 100; // Число от 0 до 100
-        let pool = [];
-
-        if (rand <= 30) {
-            // Херовый приз (30%) -> дешевле общей стоимости (10% - 60% от суммарной цены)
-            pool = Object.keys(giftDatabase).filter(k => giftDatabase[k].price >= totalPrice * 0.1 && giftDatabase[k].price <= totalPrice * 0.6);
-        } else if (rand <= 70) {
-            // В общую стоимость (40%) -> примерно равен сумме всех 5 (80% - 120% от суммарной цены)
-            pool = Object.keys(giftDatabase).filter(k => giftDatabase[k].price >= totalPrice * 0.8 && giftDatabase[k].price <= totalPrice * 1.2);
-        } else {
-            // Чуть лучше (30%) -> дороже суммы всех 5 (130% - 250% от суммарной цены)
-            pool = Object.keys(giftDatabase).filter(k => giftDatabase[k].price >= totalPrice * 1.3 && giftDatabase[k].price <= totalPrice * 2.5);
-        }
-
-        // Если пул по ценам пуст (например крафтят слишком дешевые или дорогие вещи), даем любой предмет
-        if (pool.length === 0) {
-            pool = Object.keys(giftDatabase);
-        }
-
-        const winKey = pool[Math.floor(Math.random() * pool.length)];
-
-        // 5. Записываем новый предмет
-        currentInventory.push(winKey);
-        await supabase.from('users').update({ inventory: currentInventory }).eq('user_id', user_id);
-
-        return res.status(200).json({ success: true, new_gift_key: winKey });
-
-    } catch (err) {
-        return res.status(500).json({ error: 'Ошибка сервера' });
     }
+
+    // ==========================================
+    // ЛОГИКА КРАФТА (POST)
+    // ==========================================
+    if (req.method === 'POST') {
+        try {
+            const { user_id, gift_keys } = req.body;
+            if (!user_id || !gift_keys || gift_keys.length !== 5) {
+                return res.status(400).json({ error: 'Передайте ровно 5 предметов.' });
+            }
+
+            let totalPrice = 0;
+            for (const key of gift_keys) {
+                if (!giftDatabase[key]) return res.status(400).json({ error: `Предмет ${key} не найден.` });
+                totalPrice += giftDatabase[key].price;
+            }
+
+            const { data: user, error: userError } = await supabase
+                .from('users')
+                .select('inventory')
+                .eq('user_id', String(user_id))
+                .single();
+                
+            if (userError || !user) return res.status(404).json({ error: 'Пользователь не найден.' });
+
+            let currentInventory = Array.isArray(user.inventory) ? user.inventory : [];
+
+            let tempInventory = [...currentInventory];
+            for (const key of gift_keys) {
+                const index = tempInventory.indexOf(key);
+                if (index === -1) return res.status(400).json({ error: 'Не хватает предметов в инвентаре!' });
+                tempInventory.splice(index, 1);
+            }
+            currentInventory = tempInventory;
+
+            const rand = Math.random() * 100;
+            let pool = [];
+
+            if (rand <= 30) {
+                pool = Object.keys(giftDatabase).filter(k => giftDatabase[k].price >= totalPrice * 0.1 && giftDatabase[k].price <= totalPrice * 0.6);
+            } else if (rand <= 70) {
+                pool = Object.keys(giftDatabase).filter(k => giftDatabase[k].price >= totalPrice * 0.8 && giftDatabase[k].price <= totalPrice * 1.2);
+            } else {
+                pool = Object.keys(giftDatabase).filter(k => giftDatabase[k].price >= totalPrice * 1.3 && giftDatabase[k].price <= totalPrice * 2.5);
+            }
+
+            if (pool.length === 0) {
+                pool = Object.keys(giftDatabase);
+            }
+
+            const winKey = pool[Math.floor(Math.random() * pool.length)];
+
+            currentInventory.push(winKey);
+            await supabase.from('users').update({ inventory: currentInventory }).eq('user_id', String(user_id));
+
+            return res.status(200).json({ success: true, new_gift_key: winKey });
+
+        } catch (err) {
+            return res.status(500).json({ error: 'Ошибка сервера при крафте' });
+        }
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
 }

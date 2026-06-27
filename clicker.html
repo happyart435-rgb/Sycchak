@@ -9,6 +9,25 @@
     <style>
 
 /* Эффекты для DDoS */
+
+
+/* Красное мигание для хакерской атаки */
+@keyframes red-flash {
+    0%, 100% { background: #050505; }
+    50% { background: #500; }
+}
+.hack-mode { animation: red-flash 0.5s infinite; }
+
+/* Общий текст уведомлений */
+.event-alert {
+    position: fixed; top: 10%; width: 100%; text-align: center;
+    font-size: 24px; font-weight: 900; color: #ff0000;
+    z-index: 1000; text-shadow: 0 0 10px #f00;
+    pointer-events: none;
+}
+
+
+        
 .glitch-effect {
     animation: glitch 0.2s infinite;
 }
@@ -809,5 +828,9 @@ function triggerDDoS() {
 
     window.onload = init;
 </script>
+    <div style="position:fixed; bottom: 80px; right: 10px; z-index: 9999;">
+    <button onclick="triggerHack()">Тест Хака</button>
+    <button onclick="triggerCrash()">Тест Крах</button>
+</div>
 </body>
 </html>

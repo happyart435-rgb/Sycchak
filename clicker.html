@@ -652,30 +652,7 @@ function startLoops() {
     setInterval(triggerSaveProcess, 15000); 
 }
 
-    const tapZone = document.getElementById('tap-zone');
-    const heroImg = document.getElementById('hero-img');
-    let isOverheated = false;
-
-    function handleTapLogic(x, y) {
-        const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
-        const tapCost = 1; // Расход энергии за 1 тап
-
-        if (state.energy >= tapCost) {
-            state.energy -= tapCost;
-            const earned = state.clickPower * currentHero.x;
-            state.points += earned;
-
-            const img = document.getElementById('hero-img');
-            img.classList.add('tap-anim');
-            setTimeout(() => img.classList.remove('tap-anim'), 50);
-
-            showPop(x, y, earned);
-            updateUI();
-        } else {
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-        }
-    }
-
+    
 function showPop(x, y, val) {
         const p = document.createElement('div');
         p.className = 'click-pop';

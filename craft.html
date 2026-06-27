@@ -478,12 +478,17 @@ const tg = window.Telegram.WebApp;
     }
 
     // Инициализация при загрузке страницы
+// Инициализация при загрузке страницы после того, как весь HTML готов
     async function startApp() {
         await loadUserInventory();
         initCraftSlots();
     }
     
-    startApp();
+    // Ждем, пока браузер построит DOM-дерево
+    document.addEventListener("DOMContentLoaded", () => {
+        startApp();
+    });
+</script>
 </script>
 </body>
 </html>

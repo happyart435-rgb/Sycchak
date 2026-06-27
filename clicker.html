@@ -240,7 +240,6 @@
     position: absolute; top: 30%; color: #ff3333; font-weight: 900;
     font-size: 20px; text-shadow: 0 0 10px #f00; opacity: 0;
     transition: opacity 0.3s; z-index: 20;
-    pointer-events: none; 
 }
     </style>
 </head>
@@ -336,7 +335,10 @@
     const BACKEND_URL = 'https://sycchak.vercel.app/api'; 
     tg.expand();
 
-
+let lastTapTime = 0;
+let tapCount = 0;
+let isSuspended = false;
+    
 const heroes = [
     { id: 0, x: 1, price: 0, img: "img/Новая папка (3)/pepe1.png", color: "#facc15", bg: "#1a1605" },
     { id: 1, x: 3, price: 1500000, img: "img/Новая папка (3)/pepe2.png", color: "#facc15", bg: "#2a250f" },
@@ -505,44 +507,42 @@ function startLoops() {
     setInterval(triggerSaveProcess, 15000); 
 }
 
-    
-const tapZone = document.getElementById('tap-zone');
-const heroImg = document.getElementById('hero-img');
-// Глобальные переменные для защиты
-let lastTapTime = 0;
-let fastTapCount = 0; 
-let isOverheated = false;
+    const tapZone = document.getElementById('tap-zone');
+    const heroImg = document.getElementById('hero-img');
+    let isOverheated = false;
 
-function handleTapLogic(x, y) {
+    function handleTapLogic(x, y) {
+    if (isSuspended) return; // Игнорируем клики, если сработала защита
+
     const now = Date.now();
-    const delta = now - lastTapTime;
+    const timeDiff = now - lastTapTime;
+
+    // Сбрасываем счетчик, если прошла секунда
+    if (timeDiff > 1000) {
+        tapCount = 0;
+    }
     
-    // Если интервал между кликами меньше 30мс (33+ клика в сек) -> подозрение на автокликер
-    if (delta < 30) {
-        fastTapCount++;
-    } else {
-        // Плавно уменьшаем счетчик, если пользователь кликает нормально
-        fastTapCount = Math.max(0, fastTapCount - 1);
+    // Блокируем, если кликов больше 20 в секунду (настройка чувствительности)
+    if (tapCount > 20) {
+        isSuspended = true;
+        document.getElementById('overheat-msg').innerText = "⚠️ АВТОКЛИКЕР ОБНАРУЖЕН!";
+        document.getElementById('overheat-msg').style.opacity = 1;
+        document.body.classList.add('overheat-flash');
+        
+        setTimeout(() => {
+            isSuspended = false;
+            document.body.classList.remove('overheat-flash');
+            document.getElementById('overheat-msg').style.opacity = 0;
+            tapCount = 0;
+        }, 5000); // Блокировка на 5 секунд
+        return;
     }
 
     lastTapTime = now;
+    tapCount++;
 
-    // Если "подозрений" накопилось много -> включаем перегрев
-    if (fastTapCount > 15) {
-        triggerOverheat();
-    }
-
-    // Если сейчас идет перегрев, наказываем игрока
-    if (isOverheated) {
-        state.energy = Math.max(0, state.energy - 10); // Разряжаем энергию быстрее
-        updateUI();
-        // При перегреве даем кликать, но очки не идут (можно убрать return, если хочешь жестче)
-        return; 
-    }
-
-    // --- ОБЫЧНЫЙ КЛИК ---
     const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
-    const tapCost = 1; 
+    const tapCost = 1;
 
     if (state.energy >= tapCost) {
         state.energy -= tapCost;
@@ -559,24 +559,6 @@ function handleTapLogic(x, y) {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
     }
 }
-function triggerOverheat() {
-    isOverheated = true;
-    const msg = document.getElementById('overheat-msg');
-    const body = document.body;
-
-    // Включаем визуальные эффекты
-    msg.style.opacity = 1;
-    body.classList.add('overheat-flash');
-
-    // Сбрасываем перегрев через 5 секунд
-    clearTimeout(overheatTimer);
-    overheatTimer = setTimeout(() => {
-        isOverheated = false;
-        msg.style.opacity = 0;
-        body.classList.remove('overheat-flash');
-    }, 5000);
-}
-
 function showPop(x, y, val) {
         const p = document.createElement('div');
         p.className = 'click-pop';
@@ -626,7 +608,7 @@ function showPop(x, y, val) {
             }
 
 // ... (оставляем логику как есть до самого конца функции
-            const isLocked = index > 0 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
+            const isLocked = index > 0 && index < 20 && (state.marketLevels[marketData[index - 1].id] || 0) === 0;
             
             container.innerHTML += `
                 <div class="card-item ${isLocked ? 'locked' : ''}">
@@ -682,29 +664,23 @@ function showPop(x, y, val) {
     }
 
 function renderSkins() {
-    const container = document.getElementById('skin-list');
-    container.innerHTML = '';
-    heroes.forEach(h => {
-        const isOwned = state.ownedHeroes.includes(h.id);
-        const isActive = state.activeHeroId === h.id;
-        
-        // Проверка: можно купить, только если это первый герой (id 0) 
-        // или если предыдущий герой уже куплен
-        const isPrevOwned = h.id === 0 || state.ownedHeroes.includes(h.id - 1);
-        const canBuy = !isOwned && state.points >= h.price && isPrevOwned;
-
-        container.innerHTML += `
-            <div class="card-item ${isActive ? 'active-item' : ''} ${!isPrevOwned ? 'locked' : ''}">
-                <img src="${h.img}" class="card-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
-                <div class="card-desc" style="margin-top: 10px;">${isPrevOwned ? 'МНОЖИТЕЛЬ x' + h.x : 'ЗАКРЫТО'}</div>
-                <button class="btn-action ${isOwned ? 'btn-owned' : 'btn-buy'}" 
-                        ${(!isOwned && (!canBuy || state.points < h.price)) ? 'disabled' : ''} 
-                        onclick="handleHero(${h.id})">
-                    ${isOwned ? (isActive ? 'АКТИВЕН' : 'ВЫБРАТЬ') : (isPrevOwned ? formatNumber(h.price) : '???')}
-                </button>
-            </div>`;
-    });
-}
+        const container = document.getElementById('skin-list');
+        container.innerHTML = '';
+        heroes.forEach(h => {
+            const isOwned = state.ownedHeroes.includes(h.id);
+            const isActive = state.activeHeroId === h.id;
+            container.innerHTML += `
+                <div class="card-item ${isActive ? 'active-item' : ''}">
+                    <img src="${h.img}" class="card-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
+                    <div class="card-desc" style="margin-top: 10px;">МНОЖИТЕЛЬ x${h.x}</div>
+                    <button class="btn-action ${isOwned ? 'btn-owned' : 'btn-buy'}" 
+                            ${(!isOwned && state.points < h.price) ? 'disabled' : ''} 
+                            onclick="handleHero(${h.id})">
+                        ${isOwned ? (isActive ? 'АКТИВЕН' : 'ВЫБРАТЬ') : formatNumber(h.price)}
+                    </button>
+                </div>`;
+        });
+    }
 
 window.handleHero = function(id) {
         const h = heroes.find(x => x.id === id);
@@ -785,16 +761,13 @@ window.handleHero = function(id) {
             state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
         }
         
-        const tapZone = document.getElementById('tap-zone');
-    tapZone.addEventListener('pointerdown', (e) => {
-        // Проверяем, что нажатие было именно в зоне игры
-        if (e.target.id === 'hero-img' || e.target.id === 'tap-zone') {
+        const heroImgEl = document.getElementById('hero-img');
+        heroImgEl.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             handleTapLogic(e.clientX, e.clientY);
-        }
-    });
+        });
 
-    await loadFromDB();
+        await loadFromDB();
         updateUI();
         applyHeroVisuals();
         startLoops();

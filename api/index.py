@@ -65,10 +65,26 @@ def get_inventory():
             res = supabase.table("users").select("inventory").eq("user_id", str(user_id)).execute()
 
         if res.data:
-            inventory = res.data[0].get("inventory", [])
-            if not isinstance(inventory, list):
-                inventory = []
-            return jsonify({"success": True, "inventory": inventory}), 200
+            raw_inventory = res.data[0].get("inventory", [])
+            if not isinstance(raw_inventory, list):
+                raw_inventory = []
+            
+            cleaned_inventory = []
+            # Перебираем инвентарь и исправляем кривые данные
+            for item in raw_inventory:
+                if isinstance(item, str):
+                    # Если это просто строка (например, "happybirthday.jpg"), превращаем в объект
+                    cleaned_inventory.append({
+                        "id": random.randint(1000000, 9999999), # временный id
+                        "img": f"img/{item}" if not item.startswith("img/") else item,
+                        "name": item.split('.')[0].capitalize(), # имя из названия файла
+                        "price": giftDatabase.get(item, {}).get("price", 0) # берем цену из базы
+                    })
+                elif isinstance(item, dict):
+                    # Если это уже правильный объект, просто оставляем его
+                    cleaned_inventory.append(item)
+            
+            return jsonify({"success": True, "inventory": cleaned_inventory}), 200
         return jsonify({"success": True, "inventory": []}), 200
     except Exception as e:
         return jsonify({"error": "Server error", "details": str(e)}), 500

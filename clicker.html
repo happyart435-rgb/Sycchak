@@ -765,26 +765,30 @@ window.handleHero = function(id) {
     }
 
     async function init() {
-        const saved = localStorage.getItem('nova_engine_save');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            state = { ...state, ...parsed };
-            const elapsed = Math.floor((Date.now() - state.lastUnix) / 1000);
-            state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
-        }
-        
-        const heroImgEl = document.getElementById('hero-img');
-        heroImgEl.addEventListener('pointerdown', (e) => {
-            e.preventDefault();
-            handleTapLogic(e.clientX, e.clientY);
-        });
-
-        await loadFromDB();
-        updateUI();
-        applyHeroVisuals();
-        startLoops();
+    const saved = localStorage.getItem('nova_engine_save');
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        state = { ...state, ...parsed };
+        const elapsed = Math.floor((Date.now() - state.lastUnix) / 1000);
+        state.energy = Math.min(state.maxEnergy, state.energy + elapsed);
     }
+    
+    // --- ИСПРАВЛЕННЫЙ БЛОК ---
+    const heroImgEl = document.getElementById('hero-img');
+    
+    // Убираем старую привязку, если она была, и ставим новую
+    heroImgEl.onpointerdown = null; 
+    heroImgEl.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        handleTapLogic(e); // Передаем всё событие 'e', а не координаты
+    });
+    // -------------------------
 
+    await loadFromDB();
+    updateUI();
+    applyHeroVisuals();
+    startLoops();
+}
     window.onload = init;
 </script>
 </body>

@@ -524,17 +524,16 @@ function handleTapLogic(x, y) {
         triggerOverheat();
     }
 
-    // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-    // Если перегрев активен, блокируем начисление очков
+    // --- ИСПРАВЛЕНИЕ: Блокировка начисления ---
     if (isOverheated) {
-        // Опционально: можно добавить звук или вибро при клике в перегреве
+        // Если перегрев, очки не начисляются, энергия не тратится
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-        return; // Выходим из функции, очки не начисляются
+        return; // ВАЖНО: это прерывает выполнение функции
     }
-    // -------------------------
+    // ------------------------------------------
 
     const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
-    const tapCost = 1; // Обычный расход энергии
+    const tapCost = 1; 
 
     if (state.energy >= tapCost) {
         state.energy -= tapCost;
@@ -551,7 +550,6 @@ function handleTapLogic(x, y) {
         if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
     }
 }
-
 function triggerOverheat() {
     isOverheated = true;
     const msg = document.getElementById('overheat-msg');

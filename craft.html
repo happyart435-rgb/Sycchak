@@ -199,14 +199,15 @@
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
+const tg = window.Telegram.WebApp;
     const BACKEND_URL = 'https://sycchak.vercel.app/api'; 
-    const IMAGE_FOLDER = 'img/'; // Относительный путь к папке картинок в твоем проекте
+    const IMAGE_FOLDER = 'img/'; 
     tg.expand();
 
     const TOTAL_SLOTS = 5; 
     let selectedGifts = []; 
     let activeSlotIndex = null;
+    let userInventory = []; // Сюда загрузим реальные вещи юзера из БД
 
     // Твоя база данных подарков
     const giftDatabase = {
@@ -277,6 +278,24 @@
         "tyfli.PNG": { name: "Sky Stilettos", price: 1800, img: "tyfli.PNG" }
     };
 
+    const getUserId = () => tg.initDataUnsafe?.user?.id || 12345;
+
+    // 1. Загрузка инвентаря пользователя при старте страницы
+    async function loadUserInventory() {
+        try {
+            const response = await fetch(`${BACKEND_URL}/get_inventory?user_id=${getUserId()}`);
+            const data = await response.json();
+            if (data.success && Array.isArray(data.inventory)) {
+                userInventory = data.inventory;
+            } else {
+                userInventory = [];
+            }
+        } catch (e) {
+            console.error("Ошибка загрузки инвентаря:", e);
+            userInventory = [];
+        }
+    }
+
     function initCraftSlots() {
         const container = document.getElementById('slots-container');
         container.innerHTML = '';
@@ -293,31 +312,59 @@
             slot.style.left = `${x}px`;
             slot.style.top = `${y}px`;
             slot.id = `slot-${i}`;
-            slot.innerHTML = '<span style="color: rgba(250,204,21,0.4); font-weight:900;">＋</span>';
             
-            slot.onclick = () => openInventoryForSlot(i); 
+            if (selectedGifts[i]) {
+                const item = giftDatabase[selectedGifts[i]];
+                slot.classList.add('filled');
+                slot.innerHTML = `<img src="${IMAGE_FOLDER}${item.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">`;
+                slot.onclick = () => removeGiftFromSlot(i); // По клику на заполненный слот — убираем его
+            } else {
+                slot.classList.remove('filled');
+                slot.innerHTML = '<span style="color: rgba(250,204,21,0.4); font-weight:900;">＋</span>';
+                slot.onclick = () => openInventoryForSlot(i); 
+            }
             container.appendChild(slot);
         }
         checkButtonState();
     }
 
-    // Открытие инвентаря
+    // Показываем ТОЛЬКО то, что есть в инвентаре игрока
     function openInventoryForSlot(slotIndex) {
         activeSlotIndex = slotIndex;
         const drawer = document.getElementById('inventory-drawer');
         const listContainer = document.getElementById('inventory-list');
         listContainer.innerHTML = '';
 
-        Object.keys(giftDatabase).forEach(key => {
+        // Считаем, какие предметы уже задействованы в слотах, чтобы вычесть их из списка доступных
+        let tempSelected = [...selectedGifts].filter(Boolean);
+        let availableInventory = [...userInventory];
+
+        tempSelected.forEach(giftKey => {
+            const idx = availableInventory.indexOf(giftKey);
+            if (idx !== -1) availableInventory.splice(idx, 1);
+        });
+
+        if (availableInventory.length === 0) {
+            listContainer.innerHTML = '<div style="grid-column: span 3; text-align:center; padding: 20px; color:#555; font-size:12px;">Инвентарь пуст</div>';
+            drawer.classList.add('active');
+            return;
+        }
+
+        // Рендерим только уникальные доступные предметы
+        const uniqueItems = [...new Set(availableInventory)];
+
+        uniqueItems.forEach(key => {
             const item = giftDatabase[key];
-            
-            if (selectedGifts.includes(key)) return;
+            if (!item) return;
+
+            // Считаем сколько штук осталось
+            const count = availableInventory.filter(k => k === key).length;
 
             const itemNode = document.createElement('div');
             itemNode.className = 'inv-item';
             itemNode.innerHTML = `
                 <img src="${IMAGE_FOLDER}${item.img}" class="inv-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
-                <div class="inv-name">${item.name}</div>
+                <div class="inv-name">${item.name} (${count} шт.)</div>
                 <div class="inv-price">$${item.price}</div>
             `;
             itemNode.onclick = () => selectGiftForActiveSlot(key);
@@ -331,19 +378,16 @@
         document.getElementById('inventory-drawer').classList.remove('active');
     }
 
-    // Выбор предмета и вставка его в слот на круге
     function selectGiftForActiveSlot(giftKey) {
         if (activeSlotIndex === null) return;
-        
-        const item = giftDatabase[giftKey];
         selectedGifts[activeSlotIndex] = giftKey;
-        
-        const slot = document.getElementById(`slot-${activeSlotIndex}`);
-        slot.classList.add('filled');
-        slot.innerHTML = `<img src="${IMAGE_FOLDER}${item.img}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">`;
-        
         closeInventory();
-        checkButtonState();
+        initCraftSlots();
+    }
+
+    function removeGiftFromSlot(slotIndex) {
+        selectedGifts[slotIndex] = null;
+        initCraftSlots();
     }
 
     function checkButtonState() {
@@ -374,8 +418,8 @@
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    user_id: tg.initDataUnsafe?.user?.id || 12345,
-                    gift_keys: selectedGifts
+                    user_id: getUserId(),
+                    gift_keys: selectedGifts.filter(Boolean)
                 })
             });
             
@@ -387,7 +431,7 @@
                 return;
             }
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 container.style.opacity = '0';
                 container.classList.remove('super-spin');
 
@@ -397,10 +441,13 @@
                 mainBall.innerHTML = `<img src="${IMAGE_FOLDER}${createdItem.img}" style="filter: drop-shadow(0 0 15px var(--neon));" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">`;
                 
                 if (tg.showAlert) {
-                    tg.showAlert(`🎉 Контракт выполнен успешно!\nВы получили: ${createdItem.name}`);
+                    tg.showAlert(`🎉 Контракт выполнен!\nВы получили: ${createdItem.name}`);
                 } else {
-                    alert(`🎉 Контракт выполнен успешно! Вы получили: ${createdItem.name}`);
+                    alert(`🎉 Контракт выполнен! Вы получили: ${createdItem.name}`);
                 }
+
+                // Сразу обновляем локальный инвентарь, так как бэк списал вещи и дал новую
+                await loadUserInventory();
 
                 setTimeout(() => {
                     resetCraftMachine();
@@ -430,7 +477,13 @@
         window.location.href = "index.html";
     }
 
-    initCraftSlots();
+    // Инициализация при загрузке страницы
+    async function startApp() {
+        await loadUserInventory();
+        initCraftSlots();
+    }
+    
+    startApp();
 </script>
 </body>
 </html>

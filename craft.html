@@ -281,9 +281,10 @@ const tg = window.Telegram.WebApp;
     const getUserId = () => tg.initDataUnsafe?.user?.id || 12345;
 
     // 1. Загрузка инвентаря пользователя при старте страницы
+// Изменяем старый урл на правильный файл craft_gift
     async function loadUserInventory() {
         try {
-            const response = await fetch(`${BACKEND_URL}/get_inventory?user_id=${getUserId()}`);
+            const response = await fetch(`${BACKEND_URL}/craft_gift?user_id=${getUserId()}`);
             const data = await response.json();
             if (data.success && Array.isArray(data.inventory)) {
                 userInventory = data.inventory;

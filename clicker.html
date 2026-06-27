@@ -317,7 +317,10 @@
         </div>
     </div>
     <div class="game-core" id="tap-zone">
-
+<div style="position:fixed; bottom: 80px; right: 10px; z-index: 9999;">
+    <button onclick="triggerHack()">Тест Хака</button>
+    <button onclick="triggerCrash()">Тест Крах</button>
+</div>
         <div id="overheat-msg">⚠️ БАТАРЕЯ ПЕРЕГРЕТА! ⚠️</div>
         <div class="hero-platform"></div>
         <img src="pepe1.png" id="hero-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
@@ -828,9 +831,5 @@ function triggerDDoS() {
 
     window.onload = init;
 </script>
-    <div style="position:fixed; bottom: 80px; right: 10px; z-index: 9999;">
-    <button onclick="triggerHack()">Тест Хака</button>
-    <button onclick="triggerCrash()">Тест Крах</button>
-</div>
 </body>
 </html>

@@ -314,15 +314,7 @@
 </div>
         <button class="btn-info-star" onclick="openPanel('info-panel', this)">
             КАК ПОЛУЧИТЬ STAR?
-        </button>
-
-
-<button style="position:fixed; bottom: 100px; left: 10px; z-index: 9999;" 
-        onclick="triggerDDoS()">
-    ТЕСТ DDoS
-</button>
-
-        
+        </button>        
     </div>
 
    <div class="header-ui">
@@ -336,10 +328,6 @@
         </div>
     </div>
     <div class="game-core" id="tap-zone">
-<div style="position:fixed; bottom: 80px; right: 10px; z-index: 9999;">
-    <button onclick="triggerHack()">Тест Хака</button>
-    <button onclick="triggerCrash()">Тест Крах</button>
-</div>
         <div id="overheat-msg">⚠️ БАТАРЕЯ ПЕРЕГРЕТА! ⚠️</div>
         <div class="hero-platform"></div>
         <img src="pepe1.png" id="hero-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
@@ -517,10 +505,28 @@ function startBinaryRain() {
     setTimeout(() => rain.remove(), 30000);
 }
 
-// Блокировка клика
 function handleTapLogic(x, y) {
-    if (currentEvent === 'hack' || currentEvent === 'crash') return; // Нельзя зарабатывать
-    // Дальше твой стандартный код клика...
+    // Блокируем клик, если идет хакерская атака или крах
+    if (currentEvent === 'hack' || currentEvent === 'crash') {
+        tg.HapticFeedback.notificationOccurred('error'); // Вибрация ошибки
+        return; 
+    }
+
+    const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
+    const tapCost = 1;
+
+    if (state.energy >= tapCost) {
+        state.energy -= tapCost;
+        const earned = state.clickPower * currentHero.x;
+        state.points += earned;
+
+        const img = document.getElementById('hero-img');
+        img.classList.add('tap-anim');
+        setTimeout(() => img.classList.remove('tap-anim'), 50);
+
+        showPop(x, y, earned);
+        updateUI();
+    }
 }
 
 
@@ -923,5 +929,11 @@ function triggerDDoS() {
 
     window.onload = init;
 </script>
+    <!-- Панель администратора (для тестов) -->
+<div style="position:fixed; bottom: 100px; left: 10px; z-index: 9999; display: flex; flex-direction: column; gap: 5px;">
+    <button onclick="runEvent('hack', 30)">Хакер</button>
+    <button onclick="runEvent('crash', 30)">Крах</button>
+    <button onclick="runEvent('boom', 60)">Расцвет</button>
+</div>
 </body>
 </html>

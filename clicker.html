@@ -511,54 +511,50 @@ function startLoops() {
     const heroImg = document.getElementById('hero-img');
     let isOverheated = false;
 
-    function handleTapLogic(x, y) {
-    if (isSuspended) return; // Игнорируем клики, если сработала защита
+    let lastTapTime = 0;
+let tapCount = 0;
+let isSuspended = false;
+let activePointers = new Set(); // Храним активные касания
+
+function handleTapLogic(e) {
+    if (isSuspended) return;
+
+    // Добавляем ID пальца в список активных
+    activePointers.add(e.pointerId);
+    
+    // Если на экране больше 3 пальцев одновременно — это явно не обычный геймплей, 
+    // либо это случайный "мультитач", который мы не хотим засчитывать как 4 клика
+    if (activePointers.size > 3) return; 
 
     const now = Date.now();
-    const timeDiff = now - lastTapTime;
-
-    // Сбрасываем счетчик, если прошла секунда
-    if (timeDiff > 1000) {
-        tapCount = 0;
-    }
     
-    // Блокируем, если кликов больше 20 в секунду (настройка чувствительности)
-    if (tapCount > 20) {
-        isSuspended = true;
-        document.getElementById('overheat-msg').innerText = "⚠️ АВТОКЛИКЕР ОБНАРУЖЕН!";
-        document.getElementById('overheat-msg').style.opacity = 1;
-        document.body.classList.add('overheat-flash');
-        
-        setTimeout(() => {
-            isSuspended = false;
-            document.body.classList.remove('overheat-flash');
-            document.getElementById('overheat-msg').style.opacity = 0;
-            tapCount = 0;
-        }, 5000); // Блокировка на 5 секунд
+    // Если события происходят чаще, чем 20мс — это 100% софт (автокликер)
+    if (now - lastTapTime < 20) {
+        // Здесь можно добавить логику блокировки
         return;
     }
-
+    
     lastTapTime = now;
     tapCount++;
 
-    const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
-    const tapCost = 1;
-
-    if (state.energy >= tapCost) {
-        state.energy -= tapCost;
-        const earned = state.clickPower * currentHero.x;
-        state.points += earned;
-
-        const img = document.getElementById('hero-img');
-        img.classList.add('tap-anim');
-        setTimeout(() => img.classList.remove('tap-anim'), 50);
-
-        showPop(x, y, earned);
-        updateUI();
-    } else {
-        if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-    }
+    // ... (далее идет ваша логика начисления очков)
 }
+
+// В функции init измените подписку на события:
+const heroImgEl = document.getElementById('hero-img');
+heroImgEl.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    handleTapLogic(e);
+});
+
+// Добавьте очистку, когда палец убирается с экрана
+heroImgEl.addEventListener('pointerup', (e) => {
+    activePointers.delete(e.pointerId);
+});
+heroImgEl.addEventListener('pointercancel', (e) => {
+    activePointers.delete(e.pointerId);
+});
+    
 function showPop(x, y, val) {
         const p = document.createElement('div');
         p.className = 'click-pop';

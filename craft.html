@@ -405,7 +405,7 @@ const tg = window.Telegram.WebApp;
         }
     }
 
-    async function runCraft() {
+async function runCraft() {
         if (selectedGifts.filter(Boolean).length < TOTAL_SLOTS) return;
 
         const container = document.getElementById('slots-container');
@@ -418,13 +418,51 @@ const tg = window.Telegram.WebApp;
         mainBall.classList.add('main-ball-absorb');
         statusText.innerText = "ОБМЕН...";
 
+        // --- ЛОГИКА ГАРАНТИРОВАННОГО ОКУПА ---
+        // 1. Считаем общую стоимость вложенных предметов
+        let totalInputPrice = 0;
+        selectedGifts.filter(Boolean).forEach(key => {
+            if (giftDatabase[key]) {
+                totalInputPrice += giftDatabase[key].price;
+            }
+        });
+
+        // 2. Ищем в базе предметы, которые дороже вложенных (ОКУП)
+        let profitableItems = [];
+        for (let key in giftDatabase) {
+            if (giftDatabase[key].price > totalInputPrice) {
+                profitableItems.push(key);
+            }
+        }
+
+        // Если в базе нет ничего дороже (например, закинули самые дорогие шмотки),
+        // берем просто самый дорогой предмет из доступных
+        if (profitableItems.length === 0) {
+            let highestPrice = 0;
+            let bestKey = "sliva.png";
+            for (let key in giftDatabase) {
+                if (giftDatabase[key].price > highestPrice) {
+                    highestPrice = giftDatabase[key].price;
+                    bestKey = key;
+                }
+            }
+            profitableItems.push(bestKey);
+        }
+
+        // 3. Выбираем случайный окупной предмет из списка
+        const guaranteedWinKey = profitableItems[Math.floor(Math.random() * profitableItems.length)];
+        // -------------------------------------------
+
         try {
+            // Передаем на бэк не только исходные вещи, но и желаемый крафт 
+            // (Внимание: ваш текущий бэк должен поддерживать прием поля 'forced_gift_key', иначе он проигнорирует его)
             const response = await fetch(`${BACKEND_URL}/craft_gift`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     user_id: getUserId(),
-                    gift_keys: selectedGifts.filter(Boolean)
+                    gift_keys: selectedGifts.filter(Boolean),
+                    forced_gift_key: guaranteedWinKey // Передаем сгенерированный окупной ключ
                 })
             });
             
@@ -440,18 +478,18 @@ const tg = window.Telegram.WebApp;
                 container.style.opacity = '0';
                 container.classList.remove('super-spin');
 
-                const winKey = result.new_gift_key || "sliva.png"; 
+                // Если бэк вернул ключ — берем его, если нет — используем наш окупной guaranteedWinKey
+                const winKey = result.new_gift_key || guaranteedWinKey; 
                 const createdItem = giftDatabase[winKey] || { name: "Эпический Предмет", img: "sliva.png" };
 
                 mainBall.innerHTML = `<img src="${IMAGE_FOLDER}${createdItem.img}" style="filter: drop-shadow(0 0 15px var(--neon));" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">`;
                 
                 if (tg.showAlert) {
-                    tg.showAlert(`🎉 Контракт выполнен!\nВы получили: ${createdItem.name}`);
+                    tg.showAlert(`🎉 Контракт выполнен!\nВы получили: ${createdItem.name} (Стоимость: ${createdItem.price})`);
                 } else {
                     alert(`🎉 Контракт выполнен! Вы получили: ${createdItem.name}`);
                 }
 
-                // Сразу обновляем локальный инвентарь, так как бэк списал вещи и дал новую
                 await loadUserInventory();
 
                 setTimeout(() => {

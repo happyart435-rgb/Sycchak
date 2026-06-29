@@ -7,59 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-
-/* Эффекты для DDoS */
-/* Окна как в image_7f6cb8.png */
-.win-error {
-    position: absolute; width: 280px; background: #c0c0c0; border: 2px outset #fff;
-    padding: 2px; z-index: 1000; font-family: 'Courier New', monospace;
-}
-.win-header { background: #000080; color: white; padding: 2px 5px; font-size: 12px; }
-.win-body { padding: 20px; color: black; text-align: center; font-weight: bold; }
-.win-btn { border: 2px outset #fff; background: #c0c0c0; padding: 2px 15px; }
-
-/* Красный дождь */
-.binary-rain {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
-    color: #ff0000; font-family: monospace; font-size: 20px; z-index: 50; overflow: hidden;
-}
-
-/* Красное мигание для хакерской атаки */
-@keyframes red-flash {
-    0%, 100% { background: #050505; }
-    50% { background: #500; }
-}
-.hack-mode { animation: red-flash 0.5s infinite; }
-
-/* Общий текст уведомлений */
-.event-alert {
-    position: fixed; top: 10%; width: 100%; text-align: center;
-    font-size: 24px; font-weight: 900; color: #ff0000;
-    z-index: 1000; text-shadow: 0 0 10px #f00;
-    pointer-events: none;
-}
-
-
-        
-.glitch-effect {
-    animation: glitch 0.2s infinite;
-}
-
-@keyframes glitch {
-    0% { transform: translate(2px, 2px); }
-    50% { transform: translate(-2px, -2px); }
-    100% { transform: translate(0, 0); }
-}
-
-/* Окно ошибки */
-.error-popup {
-    position: fixed; z-index: 1000;
-    width: 300px; background: #e0e0e0;
-    border: 2px solid #000; padding: 10px;
-    box-shadow: 5px 5px 0 #000;
-}
-
-        
         :root {
             --neon: #facc15; /* Изменено на золотой */
             --bg-start: #050505;
@@ -112,12 +59,6 @@
         .main-coin { width: 45px; height: 45px; object-fit: contain; }
 
         .energy-container { margin-top: 25px; padding: 0 30px; }
-
-<div id="event-timer-container" style="display:none; text-align:center; margin: 10px 0;">
-    <div id="event-name" style="font-weight:900; font-size:14px; margin-bottom:5px;"></div>
-    <div id="event-timer" style="font-size:20px; font-weight:900;">30</div>
-</div>
-        
         .energy-bar-bg {
             width: 100%; height: 14px; background: rgba(255,255,255,0.1);
             border-radius: 20px; overflow: hidden; border: 1.5px solid rgba(250, 204, 21, 0.1);
@@ -314,7 +255,7 @@
 </div>
         <button class="btn-info-star" onclick="openPanel('info-panel', this)">
             КАК ПОЛУЧИТЬ STAR?
-        </button>        
+        </button>
     </div>
 
    <div class="header-ui">
@@ -328,6 +269,7 @@
         </div>
     </div>
     <div class="game-core" id="tap-zone">
+
         <div id="overheat-msg">⚠️ БАТАРЕЯ ПЕРЕГРЕТА! ⚠️</div>
         <div class="hero-platform"></div>
         <img src="pepe1.png" id="hero-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1144/1144760.png'">
@@ -440,97 +382,6 @@ const heroes = [
         lastChargeUnix: 0
     };
 
-
-let currentEvent = null;
-
-function runEvent(type, duration) {
-    if (currentEvent) return;
-    currentEvent = type;
-    const timerCont = document.getElementById('event-timer-container');
-    const nameEl = document.getElementById('event-timer');
-    timerCont.style.display = 'block';
-    
-    let timeLeft = duration;
-    
-    // Стили события
-    if (type === 'hack') {
-        nameEl.style.color = '#ff0000';
-        document.getElementById('event-name').innerText = "⚠️ ХАКЕРСКАЯ АТАКА";
-        startBinaryRain();
-    } else if (type === 'crash') {
-        nameEl.style.color = '#ff0000';
-        document.getElementById('event-name').innerText = "📉 КРАХ БИРЖИ";
-        document.body.style.filter = "sepia(1) hue-rotate(300deg)";
-    } else if (type === 'boom') {
-        nameEl.style.color = '#00ff00';
-        document.getElementById('event-name').innerText = "🚀 РАСЦВЕТ БИРЖИ";
-        state.clickPower *= 2;
-    }
-
-    const interval = setInterval(() => {
-        timeLeft--;
-        nameEl.innerText = timeLeft;
-        if (type === 'hack' && timeLeft % 3 === 0) spawnWinError();
-        
-        if (timeLeft <= 0) {
-            clearInterval(interval);
-            timerCont.style.display = 'none';
-            document.body.style.filter = "none";
-            if (type === 'boom') state.clickPower /= 2;
-            currentEvent = null;
-        }
-    }, 1000);
-}
-
-function spawnWinError() {
-    const div = document.createElement('div');
-    div.className = 'win-error';
-    div.style.left = (Math.random() * 50 + 25) + '%';
-    div.style.top = (Math.random() * 50 + 20) + '%';
-    div.innerHTML = `<div class="win-header">System message</div><div class="win-body">Critical error</div><button class="win-btn" onclick="this.parentElement.remove()">Ok</button>`;
-    document.body.appendChild(div);
-}
-
-function startBinaryRain() {
-    const rain = document.createElement('div');
-    rain.className = 'binary-rain';
-    document.body.appendChild(rain);
-    for(let i=0; i<20; i++) {
-        let span = document.createElement('div');
-        span.style.position = 'absolute';
-        span.style.left = Math.random() * 100 + '%';
-        span.innerText = Math.random() > 0.5 ? '1' : '0';
-        rain.appendChild(span);
-    }
-    setTimeout(() => rain.remove(), 30000);
-}
-
-function handleTapLogic(x, y) {
-    // Блокируем клик, если идет хакерская атака или крах
-    if (currentEvent === 'hack' || currentEvent === 'crash') {
-        tg.HapticFeedback.notificationOccurred('error'); // Вибрация ошибки
-        return; 
-    }
-
-    const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
-    const tapCost = 1;
-
-    if (state.energy >= tapCost) {
-        state.energy -= tapCost;
-        const earned = state.clickPower * currentHero.x;
-        state.points += earned;
-
-        const img = document.getElementById('hero-img');
-        img.classList.add('tap-anim');
-        setTimeout(() => img.classList.remove('tap-anim'), 50);
-
-        showPop(x, y, earned);
-        updateUI();
-    }
-}
-
-
-    
     function updateUI() {
         document.getElementById('balance-num').innerText = formatNumber(state.points);
         document.getElementById('energy-val').innerText = Math.floor(state.energy);
@@ -652,7 +503,30 @@ function startLoops() {
     setInterval(triggerSaveProcess, 15000); 
 }
 
-    
+    const tapZone = document.getElementById('tap-zone');
+    const heroImg = document.getElementById('hero-img');
+    let isOverheated = false;
+
+    function handleTapLogic(x, y) {
+        const currentHero = heroes.find(h => h.id === state.activeHeroId) || heroes[0];
+        const tapCost = 1; // Расход энергии за 1 тап
+
+        if (state.energy >= tapCost) {
+            state.energy -= tapCost;
+            const earned = state.clickPower * currentHero.x;
+            state.points += earned;
+
+            const img = document.getElementById('hero-img');
+            img.classList.add('tap-anim');
+            setTimeout(() => img.classList.remove('tap-anim'), 50);
+
+            showPop(x, y, earned);
+            updateUI();
+        } else {
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+        }
+    }
+
 function showPop(x, y, val) {
         const p = document.createElement('div');
         p.className = 'click-pop';
@@ -852,37 +726,6 @@ window.handleHero = function(id) {
         document.getElementById('nav-main').classList.add('active');
     }
 
-
-    // Функция для создания ошибки как на image_7c5885.png
-function spawnErrorWindow() {
-    const err = document.createElement('div');
-    err.className = 'error-popup';
-    err.style.left = Math.random() * 50 + '%';
-    err.style.top = Math.random() * 50 + '%';
-    err.innerHTML = `
-        <div style="background: #000080; color: white; padding: 2px 5px; font-weight:bold;">Fatal Error</div>
-        <div style="padding: 20px; color: #000; text-align: center;">КРИТИЧЕСКИЙ СБОЙ БИРЖИ!</div>
-        <button onclick="this.parentElement.remove()">OK</button>
-    `;
-    document.body.appendChild(err);
-}
-
-// Запуск события DDoS на 30 секунд
-function triggerDDoS() {
-    const zone = document.getElementById('tap-zone');
-    zone.classList.add('glitch-effect');
-    
-    // Спавним ошибки каждые 2 секунды
-    let interval = setInterval(spawnErrorWindow, 2000);
-    
-    // Через 30 секунд все убираем
-    setTimeout(() => {
-        clearInterval(interval);
-        zone.classList.remove('glitch-effect');
-        alert("Биржа восстановлена!");
-    }, 30000);
-}
-
     async function init() {
         const saved = localStorage.getItem('nova_engine_save');
         if (saved) {
@@ -906,11 +749,5 @@ function triggerDDoS() {
 
     window.onload = init;
 </script>
-    <!-- Панель администратора (для тестов) -->
-<div style="position:fixed; bottom: 100px; left: 10px; z-index: 9999; display: flex; flex-direction: column; gap: 5px;">
-    <button onclick="runEvent('hack', 30)">Хакер</button>
-    <button onclick="runEvent('crash', 30)">Крах</button>
-    <button onclick="runEvent('boom', 60)">Расцвет</button>
-</div>
 </body>
 </html>

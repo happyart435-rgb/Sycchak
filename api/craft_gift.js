@@ -51,7 +51,6 @@ export default async function handler(req, res) {
                 .single();
 
             if (userError || !user) {
-                // Если юзера нет в базе, можно вернуть пустой массив, чтобы не крашить фронт
                 return res.status(200).json({ success: true, inventory: [] });
             }
 
@@ -96,21 +95,52 @@ export default async function handler(req, res) {
             }
             currentInventory = tempInventory;
 
+            // ===================================================
+            // НАСТРОЙКА УЛУЧШЕННЫХ ШАНСОВ (100% ГАРАНТИЯ ОКУПА)
+            // ===================================================
             const rand = Math.random() * 100;
             let pool = [];
 
-            if (rand <= 30) {
-                pool = Object.keys(giftDatabase).filter(k => giftDatabase[k].price >= totalPrice * 0.1 && giftDatabase[k].price <= totalPrice * 0.6);
-            } else if (rand <= 70) {
-                pool = Object.keys(giftDatabase).filter(k => giftDatabase[k].price >= totalPrice * 0.8 && giftDatabase[k].price <= totalPrice * 1.2);
+            if (rand <= 65) {
+                // 65% шанс: Стандартный окуп (от +15% до +40% к вложенной сумме)
+                pool = Object.keys(giftDatabase).filter(k => 
+                    giftDatabase[k].price >= totalPrice * 1.15 && 
+                    giftDatabase[k].price <= totalPrice * 1.40
+                );
+            } else if (rand <= 92) {
+                // 27% шанс: Жирный окуп (от +41% до +90% к вложенной сумме)
+                pool = Object.keys(giftDatabase).filter(k => 
+                    giftDatabase[k].price >= totalPrice * 1.41 && 
+                    giftDatabase[k].price <= totalPrice * 1.90
+                );
             } else {
-                pool = Object.keys(giftDatabase).filter(k => giftDatabase[k].price >= totalPrice * 1.3 && giftDatabase[k].price <= totalPrice * 2.5);
+                // 8% шанс: КРИТИЧЕСКИЙ КРАФТ / ДЖЕКПОТ (от x1.91 до x3.0 от вложенной суммы)
+                pool = Object.keys(giftDatabase).filter(k => 
+                    giftDatabase[k].price >= totalPrice * 1.91 && 
+                    giftDatabase[k].price <= totalPrice * 3.0
+                );
             }
 
+            // Страховка безопасности: если под закинутую сумму не нашлось подходящей вещи в пуле
             if (pool.length === 0) {
-                pool = Object.keys(giftDatabase);
+                // Ищем абсолютно любую вещь, которая хотя бы на 1 единицу дороже totalPrice
+                pool = Object.keys(giftDatabase).filter(k => giftDatabase[k].price > totalPrice);
+                
+                // Если закинули супер-дорогие вещи и окупать физически нечем, выдаем самый дорогой предмет в игре
+                if (pool.length === 0) {
+                    let maxPrice = 0;
+                    let mostExpensiveKey = "kepka.png";
+                    for (const key in giftDatabase) {
+                        if (giftDatabase[key].price > maxPrice) {
+                            maxPrice = giftDatabase[key].price;
+                            mostExpensiveKey = key;
+                        }
+                    }
+                    pool = [mostExpensiveKey];
+                }
             }
 
+            // Рандомно выбираем предмет из подготовленного окупного пула
             const winKey = pool[Math.floor(Math.random() * pool.length)];
 
             currentInventory.push(winKey);

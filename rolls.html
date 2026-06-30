@@ -289,6 +289,7 @@ let bets = [];
 let myGifts = [];
 let selectedGift = null;
 let countdownInt = null;
+let pollInt = null;
 let channel = null;
 let settling = false;
 let myProfile = null; // кэш текущего юзера (stars/balance/inventory)
@@ -392,6 +393,7 @@ async function loadOrCreateRound(){
   renderAll();
   subscribeRealtime();
   startTickLoop();
+  startPolling();
 }
 
 async function loadBets(){
@@ -631,6 +633,32 @@ function subscribeRealtime(){
     .subscribe();
 }
 
+// подстраховка на случай если realtime-канал Supabase не доставил событие
+// (бывает из-за настроек репликации/сети) — без этого чужие ставки и спин
+// у других игроков были видны только если зашедший сам что-то делал
+function startPolling(){
+  if(pollInt) clearInterval(pollInt);
+  pollInt = setInterval(async ()=>{
+    if(!currentRound || settling) return;
+    try{
+      await loadBets();
+      renderAll();
+
+      const { data: fresh } = await _supabase.from('roll_rounds').select('*').eq('id', currentRound.id).single();
+      if(fresh && fresh.status !== currentRound.status){
+        currentRound = fresh;
+        if(fresh.status === 'spinning' && spinStartedAt === null){
+          spinWheelTo(fresh.result_point);
+        } else if(fresh.status === 'finished' && spinStartedAt === null){
+          // раунд уже завершился, а мы даже не видели спин (пропустили оба события) — просто обновляемся
+          setTimeout(()=>{ location.reload(); }, 800);
+        }
+        renderAll();
+      }
+    } catch(e){ console.error('poll error', e); }
+  }, 2500);
+}
+
 function startTickLoop(){
   if(countdownInt) clearInterval(countdownInt);
   countdownInt = setInterval(tick, 1000);
@@ -716,6 +744,24 @@ async function trySettle(){
         // начинаем новый раунд "с нуля" и избегаем зависаний при частичном обновлении
         setTimeout(()=>{ location.reload(); }, 4000);
       }, 4600);
+    } else {
+      // мы проиграли "гонку" — кто-то другой уже перевёл раунд в spinning.
+      // раньше тут ничего не делалось, и колесо у этого клиента просто не крутилось.
+      // теперь подтягиваем актуальные данные раунда и анимируем у себя то же самое
+      const { data: fresh } = await _supabase.from('roll_rounds').select('*').eq('id', currentRound.id).single();
+      if(fresh){
+        currentRound = fresh;
+        if(fresh.status === 'spinning' && spinStartedAt === null){
+          spinWheelTo(fresh.result_point);
+          setTimeout(()=>{
+            const winnerAvatar = wedges.find(w=>String(w.user_id)===String(fresh.winner_user_id))?.avatar_url;
+            showWinnerBanner(fresh.winner_username, totalStars, totalTon, giftFiles.length, winnerAvatar);
+            setTimeout(()=>{ location.reload(); }, 4000);
+          }, 4600);
+        } else if(fresh.status === 'finished'){
+          setTimeout(()=>{ location.reload(); }, 800);
+        }
+      }
     }
   } catch(e){
     console.error('settle error', e);

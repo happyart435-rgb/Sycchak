@@ -292,20 +292,29 @@ async function loadMe(){
 }
 
 function parseGifts(raw){
-  let arr;
-  if(Array.isArray(raw)) {
-    arr = raw;
-  } else if(typeof raw === 'string' && raw.trim() !== ''){
-    try{ arr = JSON.parse(raw); } catch(e){ arr = raw.split(',').map(s=>s.trim()).filter(Boolean); }
-  } else {
-    arr = [];
+  if(Array.isArray(raw)) return raw;
+  if(typeof raw === 'string' && raw.trim() !== ''){
+    try{ return JSON.parse(raw); } catch(e){ return raw.split(',').map(s=>s.trim()).filter(Boolean); }
   }
-  // нормализуем каждую запись до простого имени файла (строка),
-  // т.к. в БД подарок может храниться как "name.png" или как {img:"img/name.png"}
-  return arr.map(g => {
-    const f = (typeof g === 'object' && g && g.img) ? g.img : String(g);
-    return f.split('/').pop();
-  });
+  return [];
+}
+
+// подарки в инвентаре хранятся как объекты {id, img, name, price} (см. profile.html),
+// но иногда могут быть и просто строкой-именем файла — поддерживаем оба варианта
+function giftFile(g){
+  const f = (typeof g === 'object' && g && g.img) ? g.img : String(g);
+  return f.split('/').pop();
+}
+function giftInfo(g){
+  if(typeof g === 'object' && g){
+    const file = giftFile(g);
+    return {
+      name: g.name || (ITEMS[file]?.name) || file.split('.')[0] || 'Подарок',
+      price: Number(g.price ?? ITEMS[file]?.price ?? 0)
+    };
+  }
+  const file = giftFile(g);
+  return ITEMS[file] || { name: file.split('.')[0] || 'Подарок', price: 0 };
 }
 
 function renderGiftsGrid(){
@@ -315,8 +324,9 @@ function renderGiftsGrid(){
     document.getElementById('btn-bet-gift').disabled = true;
     return;
   }
-  grid.innerHTML = myGifts.map((file, i)=>{
-    const info = ITEMS[file] || { name:file, price:0 };
+  grid.innerHTML = myGifts.map((g, i)=>{
+    const file = giftFile(g);
+    const info = giftInfo(g);
     return `<div class="gift-slot ${selectedGift===i?'selected':''}" onclick="selectGift(${i})">
       <img src="img/${file}" onerror="this.src='img/star.png'">
       <div class="gift-price">${info.price}</div>
@@ -328,7 +338,7 @@ function selectGift(i){
   selectedGift = i;
   renderGiftsGrid();
   document.getElementById('btn-bet-gift').disabled = false;
-  document.getElementById('btn-bet-gift').textContent = 'Поставить: ' + (ITEMS[myGifts[i]]?.name || myGifts[i]);
+  document.getElementById('btn-bet-gift').textContent = 'Поставить: ' + giftInfo(myGifts[i]).name;
 }
 
 async function loadOrCreateRound(){
@@ -504,14 +514,22 @@ async function placeGiftBet(){
   if(selectedGift===null) return;
   if(!currentRound || currentRound.status !== 'waiting'){ tg.showAlert ? tg.showAlert('Раунд уже стартовал, дождись нового') : alert('Раунд уже стартовал'); return; }
 
-  const file = myGifts[selectedGift];
-  const info = ITEMS[file] || { name:file, price:0 };
+  const giftObj = myGifts[selectedGift];
+  const file = giftFile(giftObj);
+  const info = giftInfo(giftObj);
 
   document.getElementById('btn-bet-gift').disabled = true;
   try{
     const me = await loadMe();
     const gifts = parseGifts(me.gifts);
-    const idx = gifts.indexOf(file);
+    // сначала ищем точную копию по id (если есть), иначе — первый подарок с тем же файлом
+    let idx = -1;
+    if(giftObj && typeof giftObj === 'object' && giftObj.id !== undefined){
+      idx = gifts.findIndex(g => g && typeof g === 'object' && g.id === giftObj.id);
+    }
+    if(idx === -1){
+      idx = gifts.findIndex(g => giftFile(g) === file);
+    }
     if(idx === -1){ throw new Error('Подарок уже не в инвентаре'); }
     gifts.splice(idx,1);
     const { error: invErr } = await _supabase.from('users').update({ gifts }).eq('user_id', userId);

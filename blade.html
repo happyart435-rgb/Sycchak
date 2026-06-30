@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beyblade Stars Battle</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+        }
+        .btn {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn:hover { background: #0077b5; }
+        #arena {
+            border: 5px solid #333;
+            border-radius: 50%;
+            background: #222;
+            margin: 20px auto;
+            display: none; /* Покажем, когда начнется игра */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Бейблейд Ставки 🚀</h1>
+    
+    <div id="lobby">
+        <p>Выберите ставку:</p>
+        <select id="betType">
+            <option value="stars">Звёзды (Stars)</option>
+            <option value="ton">TON</option>
+        </select>
+        <input type="number" id="betAmount" value="10" min="1" style="padding: 8px; border-radius: 5px;">
+        <br>
+        <button class="btn" onclick="createNewGame()">Создать лобби</button>
+    </div>
+
+    <canvas id="arena" width="400" height="400"></canvas>
+
+    <script>
+        // 1. Инициализация Supabase (замени на свои данные из настроек проекта)
+        const SUPABASE_URL = 'https://ypvvoqbvzfmirprevazq.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzM3NTgsImV4cCI6MjA5NzQ0OTc1OH0.bt4iVMEX0JtYzJxW7gtRxWEOz0eXPIOautw7_FALhkc';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Имитируем текущего игрока (В Telegram ты получишь его через window.Telegram.WebApp.initDataUnsafe)
+        const CURRENT_USER_ID = 123456789; 
+
+        // Функция создания игры
+        async function createNewGame() {
+            const betType = document.getElementById('betType').value;
+            const betAmount = parseFloat(document.getElementById('betAmount').value);
+
+            // 1. Проверяем баланс игрока в твоей таблице users
+            const { data: user, error: userError } = await supabase
+                .from('users')
+                .select('Stars, balance')
+                .eq('user_id', CURRENT_USER_ID)
+                .single();
+
+            if (userError || !user) {
+                alert("Ошибка: Пользователь не найден в базе!");
+                return;
+            }
+
+            const currentBalance = betType === 'stars' ? user.Stars : user.balance;
+
+            if (currentBalance < betAmount) {
+                alert("Недостаточно средств на балансе!");
+                return;
+            }
+
+            // 2. Списываем ставку
+            const balanceField = betType === 'stars' ? 'Stars' : 'balance';
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ [balanceField]: currentBalance - betAmount })
+                .eq('user_id', CURRENT_USER_ID);
+
+            if (updateError) {
+                alert("Не удалось списать ставку");
+                return;
+            }
+
+            // 3. Создаем запись в таблице games
+            const { data: game, error: gameError } = await supabase
+                .from('games')
+                .insert([{
+                    player_1: CURRENT_USER_ID,
+                    bet_type: betType,
+                    bet_amount: betAmount,
+                    status: 'waiting'
+                }])
+                .select()
+                .single();
+
+            if (gameError) {
+                alert("Ошибка при создании комнаты");
+                return;
+            }
+
+            alert("Комната создана! ID игры: " + game.id);
+            document.getElementById('lobby').innerHTML = `<h3>Ожидаем соперника...</h3><p>ID вашей игры: ${game.id}</p>`;
+            
+            // Здесь мы включим отслеживание подключения второго игрока
+            listenToGame(game.id);
+        }
+
+        function listenToGame(gameId) {
+            // Тут будет код, который слушает появление Игрока 2
+        }
+    </script>
+</body>
+</html>

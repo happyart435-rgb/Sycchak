@@ -209,35 +209,27 @@
                 // На бесплатном спине падает только дешевая звездочка
                 winKey = "star_cheap"; 
             } else {
-                // --- НАСТРОЙКА БАЛАНСА КЕЙСА (80% на 20%) ---
-                const luckRoll = Math.random() * 100;
+                // --- НОВЫЙ БАЛАНС (40% окуп / 60% прибыль +50..100★) ---
+                // cost здесь — цена ОДНОГО колеса (100★), не общая ставка за весь мульти-спин
+                const singleCost = 100;
+                const isOkup = Math.random() < 0.4; // 40% шанс окупа
 
-                if (luckRoll <= 80) {
-                    // 80% ШАНС: ТОЛЬКО ОКУП (rarity: 1)
-                    // Распределяем вероятность внутри окупа, чтобы супер-вещи были реже
-                    const oqupRoll = Math.random() * 100;
-                    if (oqupRoll <= 70) {
-                        winKey = "2025.jpg";     // 70% от окупа (Частый окуп)
-                    } else if (oqupRoll <= 90) {
-                        winKey = "bear.png";     // 20% от окупа
-                    } else if (oqupRoll <= 97) {
-                        winKey = "car.png";      // 7% от окупа
-                    } else if (oqupRoll <= 99.5) {
-                        winKey = "helmet.png";   // 2.5% от окупа (Редкий джекпот)
-                    } else {
-                        winKey = "kepka.png";    // 0.5% от окупа (Ультра джекпот!)
-                    }
+                let value;
+                if (isOkup) {
+                    value = singleCost; // ровно окуп — возвращаем ставку
                 } else {
-                    // 20% ШАНС: НЕОКУП / МИНУС (rarity: 0)
-                    const junkRoll = Math.random() * 100;
-                    if (junkRoll <= 70) {
-                        winKey = "raketa.png";   // 70% от неудач (минус наполовину)
-                    } else if (junkRoll <= 90) {
-                        winKey = "star";         // 20% от неудач (жесткий минус)
-                    } else {
-                        winKey = "star_cheap";   // 10% от неудач (в ноль)
-                    }
+                    value = singleCost + Math.round(50 + Math.random() * 50); // +50..+100 прибыли
                 }
+
+                // картинка чисто для красоты ленты — цена приза всегда = value выше,
+                // а не "табличная" цена из ALL_ITEMS (поэтому шансы можно точно настраивать)
+                const visualImg = isOkup
+                    ? "raketa.png"
+                    : (Math.random() < 0.5 ? "2025.jpg" : "bear.png");
+
+                currentWins.push({ price: value, img: visualImg });
+                document.getElementById(`line-${i}`).querySelectorAll('img')[130].src = `img/${visualImg}`;
+                continue; // приз уже добавлен напрямую — пропускаем общий push ниже
             }
             
             currentWins.push(ALL_ITEMS[winKey]);

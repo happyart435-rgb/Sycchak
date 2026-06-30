@@ -287,9 +287,10 @@
 
 <script>
     const tg = window.Telegram.WebApp;
+    // Если WebApp запущен не в ТГ, используем тестовый ID
     const userId = String(tg.initDataUnsafe?.user?.id || '8015661230');
 
-    // ПОДКЛЮЧАЕМ SUPABASE НАПРЯМУЮ (Берем данные из твоего рабочего профиля)
+    // ПОДКЛЮЧАЕМ SUPABASE НАПРЯМУЮ
     const SUPABASE_URL = 'https://ypvvoqbvzfmirprevazq.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz';
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -325,73 +326,66 @@
         }
     }
 
-    // Оплата TON (Для этого пока оставил Vercel URL, если бэкенд обрабатывает платежи)
+    // Оплата TON
     const BACKEND_URL = 'https://sycchak.vercel.app';
-async function processPayment(amount) {
-    if (isProcessing) return;
-    isProcessing = true;
-    tg.HapticFeedback.impactOccurred('medium');
-    try {
-        // БЫЛО: fetch(`${BACKEND_URL}/api/create_pay`, ...
-        // СТАЛО:
-        const res = await fetch(`${BACKEND_URL}/api/create_crypto_pay`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                user_id: userId, 
-                amount: Number(amount)
-            })
-        });
-        
-        const data = await res.json();
-        
-        if (res.ok && data.pay_url) { 
-            tg.openTelegramLink(data.pay_url); 
-            closeVault(); 
-        } else { 
-            tg.showAlert(data.error || 'Крипто-бот недоступен'); 
-        }
-    } catch (e) { 
-        tg.showAlert('Ошибка сети: проверь бэкенд'); 
-    } finally { 
-        isProcessing = false; 
-    }
-}
-
-async function verifyGift() {
-    const val = parseInt(document.getElementById('stars-input').value);
-    if (!val || val < 25) return tg.showAlert('Введите число');
-    
-    try {
-        const res = await fetch('/api/create_stars_pay', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ user_id: userId, amount: val })
-        });
-        
-        const data = await res.json();
-        
-        if (data.pay_url) {
-            // ПРИНУДИТЕЛЬНОЕ ОТКРЫТИЕ ЧЕРЕЗ TELEGRAM
-            // Метод openInvoice часто требует, чтобы URL был в формате https://t.me/invoice/...
-            // А не tg://invoice/...
+    async function processPayment(amount) {
+        if (isProcessing) return;
+        isProcessing = true;
+        tg.HapticFeedback.impactOccurred('medium');
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/create_crypto_pay`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: userId, 
+                    amount: Number(amount)
+                })
+            });
             
-            if (typeof window.Telegram.WebApp.openInvoice === 'function') {
-                window.Telegram.WebApp.openInvoice(data.pay_url, (status) => {
-                    if (status === 'paid') tg.showAlert('Успешно!');
-                    else if (status === 'failed') tg.showAlert('Ошибка оплаты');
-                });
-            } else {
-                // Если API старый, пробуем обычный редирект внутри приложения
-                window.location.href = data.pay_url;
+            const data = await res.json();
+            
+            if (res.ok && data.pay_url) { 
+                tg.openTelegramLink(data.pay_url); 
+                closeVault(); 
+            } else { 
+                tg.showAlert(data.error || 'Крипто-бот недоступен'); 
             }
-        } else {
-            tg.showAlert('Ошибка: ' + (data.description || 'Неизвестная ошибка'));
+        } catch (e) { 
+            tg.showAlert('Ошибка сети: проверь бэкенд'); 
+        } finally { 
+            isProcessing = false; 
         }
-    } catch (e) {
-        tg.showAlert('Ошибка: ' + e.message);
     }
-}
+
+    async function verifyGift() {
+        const val = parseInt(document.getElementById('stars-input').value);
+        if (!val || val < 25) return tg.showAlert('Введите число');
+        
+        try {
+            const res = await fetch('/api/create_stars_pay', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: userId, amount: val })
+            });
+            
+            const data = await res.json();
+            
+            if (data.pay_url) {
+                if (typeof window.Telegram.WebApp.openInvoice === 'function') {
+                    window.Telegram.WebApp.openInvoice(data.pay_url, (status) => {
+                        if (status === 'paid') tg.showAlert('Успешно!');
+                        else if (status === 'failed') tg.showAlert('Ошибка оплаты');
+                    });
+                } else {
+                    window.location.href = data.pay_url;
+                }
+            } else {
+                tg.showAlert('Ошибка: ' + (data.description || 'Неизвестная ошибка'));
+            }
+        } catch (e) {
+            tg.showAlert('Ошибка: ' + e.message);
+        }
+    }
 
     function renderTonPacks() {
         const PACKS = [1, 3, 5, 10, 20, 50, 100, 250];
@@ -420,6 +414,38 @@ async function verifyGift() {
     function closeVault() { document.getElementById('vault-modal').style.display = 'none'; }
     function navigateTo(url) { tg.HapticFeedback.impactOccurred('medium'); window.location.href = url; }
 
+    // Анимация звезд (переменные переименованы во избежание конфликтов)
+    const starsCanvas = document.getElementById('stars-canvas');
+    const starsCtx = starsCanvas.getContext('2d');
+    let starsArr = [];
+    
+    function initStars() {
+        starsCanvas.width = window.innerWidth || document.documentElement.clientWidth;
+        starsCanvas.height = window.innerHeight || document.documentElement.clientHeight;
+        starsArr = Array.from({length: 35}, () => ({ 
+            x: Math.random() * starsCanvas.width, 
+            y: Math.random() * starsCanvas.height, 
+            size: Math.random() * 1.8, 
+            speed: Math.random() * 0.4 + 0.1, 
+            opacity: Math.random() 
+        }));
+    }
+    
+    function animateStars() {
+        starsCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+        starsArr.forEach(s => {
+            starsCtx.beginPath(); 
+            starsCtx.globalAlpha = s.opacity; 
+            starsCtx.fillStyle = "#f5b025"; 
+            starsCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2); 
+            starsCtx.fill();
+            s.y += s.speed; 
+            if (s.y > starsCanvas.height) s.y = -5;
+        });
+        requestAnimationFrame(animateStars);
+    }
+
+    // ЕДИНЫЙ ОБРАБОТЧИК ЗАГРУЗКИ ОКНА
     window.onload = () => {
         tg.expand();
         tg.ready();
@@ -431,49 +457,22 @@ async function verifyGift() {
         document.getElementById('display-id').innerText = `ID: ${userId}`;
         document.getElementById('user-avatar').src = photoUrl || `https://ui-avatars.com/api/?background=c68c16&color=fff&name=${firstName}`;
         
+        // Запуск логики данных и интерфейса
         syncData();
         renderTonPacks();
-        initStars(); 
         
+        // Запуск фонового холста со звездами
+        initStars(); 
+        animateStars();
+        
+        window.addEventListener('resize', initStars);
+        
+        // Плавное выключение лоадера
         setTimeout(() => {
             document.getElementById('global-loader').style.display = 'none';
             document.body.classList.add('loaded');
         }, 800);
     };
-
-    // Анимация звезд
-    const canvas = document.getElementById('stars-canvas');
-    const ctx = canvas.getContext('2d');
-    let starsArr = [];
-    
-    function initStars() {
-        canvas.width = window.innerWidth || document.documentElement.clientWidth;
-        canvas.height = window.innerHeight || document.documentElement.clientHeight;
-        starsArr = Array.from({length: 35}, () => ({ 
-            x: Math.random() * canvas.width, 
-            y: Math.random() * canvas.height, 
-            size: Math.random() * 1.8, 
-            speed: Math.random() * 0.4 + 0.1, 
-            opacity: Math.random() 
-        }));
-    }
-    
-    function animateStars() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        starsArr.forEach(s => {
-            ctx.beginPath(); 
-            ctx.globalAlpha = s.opacity; 
-            ctx.fillStyle = "#f5b025"; 
-            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); 
-            ctx.fill();
-            s.y += s.speed; 
-            if (s.y > canvas.height) s.y = -5;
-        });
-        requestAnimationFrame(animateStars);
-    }
-    
-    window.addEventListener('resize', initStars);
-    animateStars();
 </script>
 </body>
 </html>

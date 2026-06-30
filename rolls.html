@@ -292,11 +292,20 @@ async function loadMe(){
 }
 
 function parseGifts(raw){
-  if(Array.isArray(raw)) return raw;
-  if(typeof raw === 'string' && raw.trim() !== ''){
-    try{ return JSON.parse(raw); } catch(e){ return raw.split(',').map(s=>s.trim()).filter(Boolean); }
+  let arr;
+  if(Array.isArray(raw)) {
+    arr = raw;
+  } else if(typeof raw === 'string' && raw.trim() !== ''){
+    try{ arr = JSON.parse(raw); } catch(e){ arr = raw.split(',').map(s=>s.trim()).filter(Boolean); }
+  } else {
+    arr = [];
   }
-  return [];
+  // нормализуем каждую запись до простого имени файла (строка),
+  // т.к. в БД подарок может храниться как "name.png" или как {img:"img/name.png"}
+  return arr.map(g => {
+    const f = (typeof g === 'object' && g && g.img) ? g.img : String(g);
+    return f.split('/').pop();
+  });
 }
 
 function renderGiftsGrid(){

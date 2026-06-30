@@ -140,12 +140,6 @@ header{
 
 <div class="content">
 
-  <div class="pot-card">
-    <div class="pot-item"><img class="icon-cur" src="img/star.png" onerror="this.style.display='none'"> <span id="pot-stars">0</span></div>
-    <div class="pot-item"><img class="icon-cur" src="img/ton.png" onerror="this.style.display='none'"> <span id="pot-ton">0</span></div>
-    <div class="pot-item">🎁 <span id="pot-gifts">0</span></div>
-  </div>
-
   <div class="wheel-wrap">
     <div class="pointer"></div>
     <div class="wheel" id="wheel">
@@ -566,10 +560,16 @@ async function placeGiftBet(){
     if(invErr) throw invErr;
     myProfile[INVENTORY_COLUMN] = inventory;
 
-    const { error: betErr } = await _supabase.from('roll_bets').insert({
-      round_id: currentRound.id, user_id: userId, username, avatar_url: avatarUrl,
-      bet_type: 'gift', gift_filename: file, value_stars: info.price
-    });
+const { error: betErr } = await _supabase.from('roll_bets').insert({
+  round_id: currentRound.id, 
+  user_id: userId, 
+  username, 
+  avatar_url: avatarUrl,
+  bet_type: 'gift', 
+  amount: 1, // <--- Добавьте эту строку, чтобы база данных не ругалась
+  gift_filename: file, 
+  value_stars: info.price
+});
     if(betErr) throw betErr;
 
     myGifts.splice(selectedGift,1);

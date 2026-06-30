@@ -410,48 +410,54 @@ function renderAll(){
   const totalStars = wedges.filter(w=>w.type==='stars').reduce((s,w)=>s+w.amount,0);
   const totalTon = wedges.filter(w=>w.type==='ton').reduce((s,w)=>s+w.amount,0);
   const totalGifts = wedges.filter(w=>w.type==='gift').length;
-  document.getElementById('pot-stars').textContent = fmt(totalStars);
-  document.getElementById('pot-ton').textContent = fmt(totalTon);
-  document.getElementById('pot-gifts').textContent = totalGifts;
+
+  // Безопасное обновление плашек банка раунда
+  const elPotStars = document.getElementById('pot-stars');
+  if(elPotStars) elPotStars.textContent = fmt(totalStars);
+  
+  const elPotTon = document.getElementById('pot-ton');
+  if(elPotTon) elPotTon.textContent = fmt(totalTon);
+  
+  const elPotGifts = document.getElementById('pot-gifts');
+  if(elPotGifts) elPotGifts.textContent = totalGifts;
 
   const wheelEl = document.getElementById('wheel');
-  // убираем старые аватарки
-  wheelEl.querySelectorAll('.wedge-avatar').forEach(el=>el.remove());
+  if (wheelEl) {
+    wheelEl.querySelectorAll('.wedge-avatar').forEach(el=>el.remove());
 
-  if(wedges.length===0 || total<=0){
-    wheelEl.style.background = 'conic-gradient(#1f1a10 0deg, #1f1a10 360deg)';
-  } else {
-    let acc = 0;
-    const stops = [];
-    const counters = {stars:0, ton:0, gift:0};
-    wedges.forEach((w)=>{
-      const start = acc/total*360;
-      acc += w.value_stars;
-      const end = acc/total*360;
-      const hue = TYPE_HUE[w.type] || 0;
-      const lightness = 42 + (counters[w.type]%3)*8;
-      counters[w.type]++;
-      const color = `hsl(${hue},70%,${lightness}%)`;
-      stops.push(`${color} ${start}deg ${end}deg`);
+    if(wedges.length===0 || total<=0){
+      wheelEl.style.background = 'conic-gradient(#1f1a10 0deg, #1f1a10 360deg)';
+    } else {
+      let acc = 0;
+      const stops = [];
+      const counters = {stars:0, ton:0, gift:0};
+      wedges.forEach((w)=>{
+        const start = acc/total*360;
+        acc += w.value_stars;
+        const end = acc/total*360;
+        const hue = TYPE_HUE[w.type] || 0;
+        const lightness = 42 + (counters[w.type]%3)*8;
+        counters[w.type]++;
+        const color = `hsl(${hue},70%,${lightness}%)`;
+        stops.push(`${color} ${start}deg ${end}deg`);
 
-      // аватар в середине сектора
-      const mid = (start+end)/2;
-      const rad = mid*Math.PI/180;
-      const R = 92; // радиус размещения аватарок
-      const cx = 130 + R*Math.sin(rad);
-      const cy = 130 - R*Math.cos(rad);
-      const img = document.createElement('img');
-      img.className = 'wedge-avatar';
-      img.style.left = cx+'px'; img.style.top = cy+'px';
-      img.style.borderColor = color;
-      img.src = w.avatar_url || 'https://img.icons8.com/fluency/96/user-male-circle.png';
-      img.onerror = function(){ this.src='https://img.icons8.com/fluency/96/user-male-circle.png'; };
-      wheelEl.appendChild(img);
-    });
-    wheelEl.style.background = `conic-gradient(${stops.join(',')})`;
+        const mid = (start+end)/2;
+        const rad = mid*Math.PI/180;
+        const R = 92;
+        const cx = 130 + R*Math.sin(rad);
+        const cy = 130 - R*Math.cos(rad);
+        const img = document.createElement('img');
+        img.className = 'wedge-avatar';
+        img.style.left = cx+'px'; img.style.top = cy+'px';
+        img.style.borderColor = color;
+        img.src = w.avatar_url || 'https://img.icons8.com/fluency/96/user-male-circle.png';
+        img.onerror = function(){ this.src='https://img.icons8.com/fluency/96/user-male-circle.png'; };
+        wheelEl.appendChild(img);
+      });
+      wheelEl.style.background = `conic-gradient(${stops.join(',')})`;
+    }
   }
 
-  // список игроков (группируем по user_id для компактности)
   const grouped = {};
   const order = [];
   wedges.forEach(w=>{
@@ -462,31 +468,38 @@ function renderAll(){
     if(w.type==='ton') g.ton += w.amount;
     if(w.type==='gift') g.gifts.push(w.gift_filename);
   });
+  
   const listEl = document.getElementById('players-list');
-  if(order.length===0){
-    listEl.innerHTML = '<div class="empty-state">Пока никто не сделал ставку</div>';
-  } else {
-    listEl.innerHTML = order.map((uid,i)=>{
-      const g = grouped[uid];
-      const pct = total>0 ? fmt(g.value/total*100) : 0;
-      const parts = [];
-      if(g.stars>0) parts.push(`<span><img src="img/star.png" onerror="this.style.display='none'"> ${fmt(g.stars)}</span>`);
-      if(g.ton>0) parts.push(`<span><img src="img/ton.png" onerror="this.style.display='none'"> ${fmt(g.ton)}</span>`);
-      if(g.gifts.length>0) parts.push(`<span>🎁 x${g.gifts.length}</span>`);
-      return `<div class="player-row">
-        <img class="player-avatar" src="${g.avatar_url||'https://img.icons8.com/fluency/96/user-male-circle.png'}" onerror="this.src='https://img.icons8.com/fluency/96/user-male-circle.png'">
-        <div class="player-info">
-          <div class="player-name">${escapeHtml(g.username||'Player')}</div>
-          <div class="player-percent">${pct}%</div>
-          <div class="player-breakdown">${parts.join('')}</div>
-        </div>
-      </div>`;
-    }).join('');
+  if(listEl) {
+    if(order.length===0){
+      listEl.innerHTML = '<div class="empty-state">Пока никто не сделал ставку</div>';
+    } else {
+      listEl.innerHTML = order.map((uid,i)=>{
+        const g = grouped[uid];
+        const pct = total>0 ? fmt(g.value/total*100) : 0;
+        const parts = [];
+        if(g.stars>0) parts.push(`<span><img src="img/star.png" onerror="this.style.display='none'"> ${fmt(g.stars)}</span>`);
+        if(g.ton>0) parts.push(`<span><img src="img/ton.png" onerror="this.style.display='none'"> ${fmt(g.ton)}</span>`);
+        if(g.gifts.length>0) parts.push(`<span>🎁 x${g.gifts.length}</span>`);
+        return `<div class="player-row">
+          <img class="player-avatar" src="${g.avatar_url||'https://img.icons8.com/fluency/96/user-male-circle.png'}" onerror="this.src='https://img.icons8.com/fluency/96/user-male-circle.png'">
+          <div class="player-info">
+            <div class="player-name">${escapeHtml(g.username||'Player')}</div>
+            <div class="player-percent">${pct}%</div>
+            <div class="player-breakdown">${parts.join('')}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
   }
 
-  document.getElementById('status-label').textContent =
-    currentRound.status === 'finished' ? 'Завершено' :
-    currentRound.status === 'spinning' ? 'Крутим...' : 'Ожидание';
+  // Безопасное обновление статуса
+  const elStatus = document.getElementById('status-label');
+  if(elStatus) {
+    elStatus.textContent =
+      currentRound.status === 'finished' ? 'Завершено' :
+      currentRound.status === 'spinning' ? 'Крутим...' : 'Ожидание';
+  }
 }
 
 function addAmount(v){

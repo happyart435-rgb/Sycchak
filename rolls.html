@@ -120,6 +120,12 @@ header{
   text-align:center; box-shadow:0 0 40px rgba(212,175,55,0.5); display:none;
 }
 .winner-banner.show{display:block; animation:pop 0.3s ease;}
+.winner-avatar{
+  width:64px; height:64px; border-radius:50%; object-fit:cover; background:#222;
+  border:3px solid var(--accent); box-shadow:0 0 16px rgba(212,175,55,0.5);
+  display:block; margin:0 auto 10px auto;
+}
+.winner-amount img{width:14px; height:14px; vertical-align:-2px; margin-left:2px;}
 @keyframes pop{from{transform:translate(-50%,-50%) scale(0.7); opacity:0;} to{transform:translate(-50%,-50%) scale(1); opacity:1;}}
 </style>
 </head>
@@ -180,9 +186,10 @@ header{
 </div>
 
 <div class="winner-banner" id="winner-banner">
+  <img id="winner-avatar" class="winner-avatar" src="" onerror="this.src='https://img.icons8.com/fluency/96/user-male-circle.png'">
   <div style="font-size:11px;color:#999;text-transform:uppercase;font-weight:800;">Победитель</div>
   <div id="winner-name" style="font-size:1.3rem;font-weight:900;color:#d4af37;margin:6px 0;"></div>
-  <div id="winner-amount" style="font-size:1rem;font-weight:800;"></div>
+  <div id="winner-amount" class="winner-amount" style="font-size:1rem;font-weight:800; display:flex; align-items:center; justify-content:center; gap:8px;"></div>
 </div>
 
 <script>
@@ -285,6 +292,7 @@ let countdownInt = null;
 let channel = null;
 let settling = false;
 let myProfile = null; // кэш текущего юзера (stars/balance/inventory)
+let spinStartedAt = null; // когда начался спин — для защиты от зависаний
 
 function fmt(n){ return Math.round(n*100)/100; }
 
@@ -639,6 +647,10 @@ function tick(){
     else { timerEl.textContent = '0'; trySettle(); }
   } else if(currentRound.status === 'spinning'){
     timerEl.textContent = '🎲';
+    if(spinStartedAt === null) spinStartedAt = Date.now();
+    // если спин "завис" дольше 15 секунд (например, сорвалось realtime-событие
+    // на этом устройстве) — просто перезагружаем страницу и стартуем заново
+    if(Date.now() - spinStartedAt > 15000){ location.reload(); }
   } else if(currentRound.status === 'finished'){
     timerEl.textContent = '✓';
   }
@@ -654,7 +666,7 @@ async function trySettle(){
 
     if(total === 0){
       await _supabase.from('roll_rounds').update({ status:'finished' }).eq('id', currentRound.id).eq('status','waiting');
-      setTimeout(()=>loadOrCreateRound(), 1500);
+      setTimeout(()=>{ location.reload(); }, 1000);
       return;
     }
 
@@ -693,14 +705,16 @@ async function trySettle(){
           await _supabase.from('users').update({ stars:newStars, balance:newTon, [INVENTORY_COLUMN]:newInventory }).eq('user_id', winnerWedge.user_id);
         }
         await _supabase.from('roll_rounds').update({ status:'finished' }).eq('id', currentRound.id);
-        showWinnerBanner(winnerWedge.username, totalStars, totalTon, giftFiles.length);
+        showWinnerBanner(winnerWedge.username, totalStars, totalTon, giftFiles.length, winnerWedge.avatar_url);
         // если выиграли мы сами — подтягиваем актуальный баланс и инвентарь сразу
         if(String(winnerWedge.user_id) === userId){
           await loadMe(true);
           myGifts = parseGifts(myProfile[INVENTORY_COLUMN]);
           renderGiftsGrid();
         }
-        setTimeout(()=>loadOrCreateRound(), 3500);
+        // через несколько секунд полностью перезагружаем страницу — гарантированно
+        // начинаем новый раунд "с нуля" и избегаем зависаний при частичном обновлении
+        setTimeout(()=>{ location.reload(); }, 4000);
       }, 4600);
     }
   } catch(e){
@@ -710,21 +724,31 @@ async function trySettle(){
   }
 }
 
+let wheelRotation = 0; // накопленный угол поворота колеса (всегда растёт, не сбрасывается)
+
 function spinWheelTo(angle){
   const wheelEl = document.getElementById('wheel');
-  const spins = 5;
-  const target = spins*360 + (360 - angle);
-  wheelEl.style.transition = 'transform 4.5s cubic-bezier(0.17,0.67,0.18,1)';
+  const spins = 8; // количество полных оборотов — чем больше, тем "живее" раскрутка
+  // считаем от текущего накопленного угла, округлённого вниз до полного круга,
+  // чтобы новый поворот ВСЕГДА был заметно больше предыдущего (раньше из-за
+  // абсолютного rotate() от старого положения колесо иногда крутилось почти
+  // на месте или даже "назад" — отсюда и ощущение "вялого" вращения)
+  const floorBase = Math.floor(wheelRotation/360)*360;
+  const target = floorBase + spins*360 + (360 - angle);
+  wheelRotation = target;
+  spinStartedAt = Date.now();
+  wheelEl.style.transition = 'transform 4.5s cubic-bezier(0.12,0.85,0.2,1)';
   wheelEl.style.transform = `rotate(${target}deg)`;
 }
 
-function showWinnerBanner(name, totalStars, totalTon, giftCount){
+function showWinnerBanner(name, totalStars, totalTon, giftCount, avatarUrlWin){
   document.getElementById('winner-name').textContent = name || 'Player';
+  document.getElementById('winner-avatar').src = avatarUrlWin || 'https://img.icons8.com/fluency/96/user-male-circle.png';
   const parts = [];
-  if(totalStars>0) parts.push(fmt(totalStars)+' ⭐');
-  if(totalTon>0) parts.push(fmt(totalTon)+' 💎');
-  if(giftCount>0) parts.push(giftCount+' 🎁');
-  document.getElementById('winner-amount').textContent = '+ ' + parts.join(' / ');
+  if(totalStars>0) parts.push(`<span style="display:inline-flex;align-items:center;gap:3px;">${fmt(totalStars)}<img src="img/star.png" onerror="this.style.display='none'"></span>`);
+  if(totalTon>0) parts.push(`<span style="display:inline-flex;align-items:center;gap:3px;">${fmt(totalTon)}<img src="img/ton.png" onerror="this.style.display='none'"></span>`);
+  if(giftCount>0) parts.push(`<span>${giftCount} 🎁</span>`);
+  document.getElementById('winner-amount').innerHTML = '+ ' + parts.join(' / ');
   document.getElementById('winner-banner').classList.add('show');
   tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
 }

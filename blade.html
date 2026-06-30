@@ -13,6 +13,10 @@
             text-align: center;
             padding: 20px;
         }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
         .btn {
             background: #0088cc;
             color: white;
@@ -21,106 +25,311 @@
             font-size: 16px;
             border-radius: 8px;
             cursor: pointer;
-            margin-top: 10px;
+            margin: 10px 5px;
         }
         .btn:hover { background: #0077b5; }
+        .btn.secondary { background: #444; }
+        .btn.secondary:hover { background: #555; }
+        
         #arena {
             border: 5px solid #333;
             border-radius: 50%;
             background: #222;
             margin: 20px auto;
-            display: none; /* Покажем, когда начнется игра */
+            display: none; 
         }
+        .hud {
+            display: none;
+            justify-content: space-between;
+            max-width: 400px;
+            margin: 10px auto;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .hp-bar {
+            width: 120px;
+            height: 15px;
+            background: #555;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .hp-fill {
+            height: 100%;
+            background: #ff3333;
+            width: 100%;
+            transition: width 0.2s ease;
+        }
+        #p1-hp-fill { background: #00ff66; }
+        
+        .game-list {
+            margin-top: 20px;
+            text-align: left;
+            background: #2b2b2b;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .game-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #444;
+        }
+        .game-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
 
-    <h1>Бейблейд Ставки 🚀</h1>
-    
-    <div id="lobby">
-        <p>Выберите ставку:</p>
-        <select id="betType">
-            <option value="stars">Звёзды (Stars)</option>
-            <option value="ton">TON</option>
-        </select>
-        <input type="number" id="betAmount" value="10" min="1" style="padding: 8px; border-radius: 5px;">
-        <br>
-        <button class="btn" onclick="createNewGame()">Создать лобби</button>
+    <div class="container">
+        <h1>Бейблейд Ставки 🚀</h1>
+        
+        <div id="lobby">
+            <p>Выберите ставку для создания лобби:</p>
+            <select id="betType" style="padding: 8px; border-radius: 5px;">
+                <option value="stars">Звёзды (Stars)</option>
+                <option value="ton">TON</option>
+            </select>
+            <input type="number" id="betAmount" value="10" min="1" style="padding: 8px; border-radius: 5px; width: 80px;">
+            <br>
+            <button class="btn" onclick="createNewGame()">Создать лобби</button>
+            <button class="btn secondary" onclick="loadActiveGames()">Обновить список игр</button>
+
+            <div class="game-list">
+                <h3>Доступные игры для подключения:</h3>
+                <div id="gamesContainer">Загрузка доступных игр...</div>
+            </div>
+        </div>
+
+        <div id="waitingScreen" style="display: none;">
+            <h3>Ожидаем соперника...</h3>
+            <p id="gameIdDisplay"></p>
+            <div style="margin: 20px auto;" class="hp-bar"><div class="hp-fill" style="width: 100%; background: #0088cc;"></div></div>
+        </div>
+
+        <div class="hud" id="gameHud">
+            <div>
+                <span>Игрок 1 (Вы)</span>
+                <div class="hp-bar"><div id="p1-hp-fill" class="hp-fill"></div></div>
+                <div id="p1-hp-text">100 HP</div>
+            </div>
+            <div>
+                <span>Игрок 2</span>
+                <div class="hp-bar"><div id="p2-hp-fill" class="hp-fill"></div></div>
+                <div id="p2-hp-text">100 HP</div>
+            </div>
+        </div>
+
+        <canvas id="arena" width="400" height="400"></canvas>
+        <h2 id="endGameMessage" style="color: #ffcc00; margin-top: 15px;"></h2>
     </div>
 
-    <canvas id="arena" width="400" height="400"></canvas>
-
     <script>
-        // 1. Инициализация Supabase (замени на свои данные из настроек проекта)
+        // 1. Инициализация Supabase
         const SUPABASE_URL = 'https://ypvvoqbvzfmirprevazq.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwdnZvcWJ2emZtaXJwcmV2YXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzM3NTgsImV4cCI6MjA5NzQ0OTc1OH0.bt4iVMEX0JtYzJxW7gtRxWEOz0eXPIOautw7_FALhkc';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = client.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Имитируем текущего игрока (В Telegram ты получишь его через window.Telegram.WebApp.initDataUnsafe)
+        // Имитируем текущего игрока (В Telegram Mini App заменить на window.Telegram.WebApp.initDataUnsafe.user.id)
         const CURRENT_USER_ID = 123456789; 
 
-        // Функция создания игры
+        let activeChannel = null;
+        const canvas = document.getElementById('arena');
+        const ctx = canvas.getContext('2d');
+
+        // Авто-запуск при открытии страницы
+        window.onload = () => {
+            loadActiveGames();
+        };
+
+        // Загрузка комнат, ожидающих игроков
+        async function loadActiveGames() {
+            const container = document.getElementById('gamesContainer');
+            
+            const { data: activeGames, error } = await supabase
+                .from('games')
+                .select('*')
+                .eq('status', 'waiting')
+                .not('player_1', 'eq', CURRENT_USER_ID); // не показывать свои игры
+
+            if (error) {
+                container.innerHTML = 'Ошибка загрузки списка игр.';
+                return;
+            }
+
+            if (!activeGames || activeGames.length === 0) {
+                container.innerHTML = 'Нет доступных игр. Создайте свою!';
+                return;
+            }
+
+            container.innerHTML = '';
+            activeGames.forEach(game => {
+                container.innerHTML += `
+                    <div class="game-item">
+                        <span>Игрок #${game.player_1} (${game.bet_amount} ${game.bet_type.toUpperCase()})</span>
+                        <button class="btn" style="padding: 6px 12px; font-size: 14px;" onclick="joinGame('${game.id}')">Играть</button>
+                    </div>
+                `;
+            });
+        }
+
+        // БЕЗОПАСНОЕ СОЗДАНИЕ ИГРЫ ЧЕРЕЗ ТВОЙ API ЭНДПОИНТ
         async function createNewGame() {
             const betType = document.getElementById('betType').value;
             const betAmount = parseFloat(document.getElementById('betAmount').value);
 
-            // 1. Проверяем баланс игрока в твоей таблице users
-            const { data: user, error: userError } = await supabase
-                .from('users')
-                .select('Stars, balance')
-                .eq('user_id', CURRENT_USER_ID)
-                .single();
+            try {
+                const response = await fetch('/api/create-game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: CURRENT_USER_ID, betType, betAmount })
+                });
+                
+                const result = await response.json();
 
-            if (userError || !user) {
-                alert("Ошибка: Пользователь не найден в базе!");
-                return;
+                if (!result.success) {
+                    alert("Ошибка сервера: " + result.message);
+                    return;
+                }
+
+                document.getElementById('lobby').style.display = 'none';
+                document.getElementById('waitingScreen').style.display = 'block';
+                document.getElementById('gameIdDisplay').innerText = `ID вашей игры: ${result.gameId}`;
+                
+                // Включаем Realtime на отслеживание изменения статуса этой игры (когда зайдет соперник)
+                listenToGameStatus(result.gameId);
+
+            } catch (err) {
+                alert("Ошибка соединения с API создания игры");
+                console.error(err);
             }
-
-            const currentBalance = betType === 'stars' ? user.Stars : user.balance;
-
-            if (currentBalance < betAmount) {
-                alert("Недостаточно средств на балансе!");
-                return;
-            }
-
-            // 2. Списываем ставку
-            const balanceField = betType === 'stars' ? 'Stars' : 'balance';
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({ [balanceField]: currentBalance - betAmount })
-                .eq('user_id', CURRENT_USER_ID);
-
-            if (updateError) {
-                alert("Не удалось списать ставку");
-                return;
-            }
-
-            // 3. Создаем запись в таблице games
-            const { data: game, error: gameError } = await supabase
-                .from('games')
-                .insert([{
-                    player_1: CURRENT_USER_ID,
-                    bet_type: betType,
-                    bet_amount: betAmount,
-                    status: 'waiting'
-                }])
-                .select()
-                .single();
-
-            if (gameError) {
-                alert("Ошибка при создании комнаты");
-                return;
-            }
-
-            alert("Комната создана! ID игры: " + game.id);
-            document.getElementById('lobby').innerHTML = `<h3>Ожидаем соперника...</h3><p>ID вашей игры: ${game.id}</p>`;
-            
-            // Здесь мы включим отслеживание подключения второго игрока
-            listenToGame(game.id);
         }
 
-        function listenToGame(gameId) {
-            // Тут будет код, который слушает появление Игрока 2
+        // БЕЗОПАСНОЕ ПОДКЛЮЧЕНИЕ К ИГРЕ ЧЕРЕЗ ТВОЙ API ЭНДПОИНТ
+        async function joinGame(gameId) {
+            try {
+                const response = await fetch('/api/join-game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: CURRENT_USER_ID, gameId })
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    alert("Не удалось войти: " + result.message);
+                    return;
+                }
+
+                // Входим в игровой процесс
+                startBattleMode(gameId);
+
+            } catch (err) {
+                alert("Ошибка соединения с API подключения");
+                console.error(err);
+            }
+        }
+
+        // Подписка создателя на вход второго игрока
+        function listenToGameStatus(gameId) {
+            supabase
+                .channel(`game_status_${gameId}`)
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` }, payload => {
+                    if (payload.new.status === 'playing') {
+                        startBattleMode(gameId);
+                    }
+                })
+                .subscribe();
+        }
+
+        // Переключение интерфейса на Арену и подключение к игровому потоку Realtime координат
+        function startBattleMode(gameId) {
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('waitingScreen').style.display = 'none';
+            document.getElementById('gameHud').style.display = 'flex';
+            canvas.style.display = 'block';
+
+            // Подписываемся на таблицу game_state для получения координат блейдов онлайн
+            activeChannel = supabase
+                .channel(`battle_${gameId}`)
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'game_state', filter: `game_id=eq.${gameId}` }, payload => {
+                    const data = payload.new;
+                    
+                    // Обновляем шкалу HP в интерфейсе
+                    document.getElementById('p1-hp-fill').style.width = `${data.p1_hp}%`;
+                    document.getElementById('p1-hp-text').innerText = `${data.p1_hp} HP`;
+                    document.getElementById('p2-hp-fill').style.width = `${data.p2_hp}%`;
+                    document.getElementById('p2-hp-text').innerText = `${data.p2_hp} HP`;
+
+                    // Отрисовываем блейды на Canvas арене
+                    drawArena(data.p1_x, data.p1_y, data.p1_hp, data.p2_x, data.p2_y, data.p2_hp);
+
+                    // Проверяем завершение битвы
+                    if (data.p1_hp <= 0 || data.p2_hp <= 0) {
+                        handleEndGame(data);
+                    }
+                })
+                .subscribe();
+        }
+
+        // Рендеринг блейдов на Canvas
+        function drawArena(p1_x, p1_y, p1_hp, p2_x, p2_y, p2_hp) {
+            // Очищаем Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Рисуем внутренние круги разметки арены
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(200, 200, 150, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(200, 200, 80, 0, Math.PI * 2); ctx.stroke();
+
+            const radius = 25; // Радиус блейда-круга
+
+            // Отрисовка Блейда 1 (Создатель) - Зеленый
+            if (p1_hp > 0) {
+                ctx.fillStyle = '#00ff66';
+                ctx.beginPath();
+                ctx.arc(p1_x, p1_y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                // Текст ставки внутри блейда
+                ctx.fillStyle = '#000';
+                ctx.font = '12px Arial';
+                ctx.fillText('B1', p1_x - 7, p1_y + 4);
+            }
+
+            // Отрисовка Блейда 2 (Соперник) - Красный
+            if (p2_hp > 0) {
+                ctx.fillStyle = '#ff3333';
+                ctx.beginPath();
+                ctx.arc(p2_x, p2_y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                // Текст ставки внутри блейда
+                ctx.fillStyle = '#000';
+                ctx.font = '12px Arial';
+                ctx.fillText('B2', p2_x - 7, p2_y + 4);
+            }
+        }
+
+        // Вывод результатов игры
+        function handleEndGame(finalState) {
+            if (activeChannel) {
+                supabase.removeChannel(activeChannel);
+            }
+            
+            const msgElement = document.getElementById('endGameMessage');
+            if (finalState.p1_hp <= 0 && finalState.p2_hp <= 0) {
+                msgElement.innerText = "Ничья! Оба блейда уничтожены.";
+            } else if (finalState.p1_hp <= 0) {
+                msgElement.innerText = "Игрок 2 победил и забрал куш! 🏆";
+            } else {
+                msgElement.innerText = "Вы победили и забрали куш! 🏆";
+            }
         }
     </script>
 </body>

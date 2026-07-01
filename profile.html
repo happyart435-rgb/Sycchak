@@ -122,12 +122,12 @@
         </div>
     </div>
 
-    <!-- Заглушка вместо активной ссылки -->
-    <div class="relative w-full bg-black/20 border border-white/5 rounded-xl p-4 text-center">
-        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-            Скоро будет доступно....
-        </p>
+    <!-- Реферальная ссылка -->
+    <div class="relative w-full bg-black/20 border border-white/5 rounded-xl p-4 flex items-center justify-between gap-3">
+        <span id="ref-link-text" class="text-[10px] text-gray-300 font-mono truncate">...</span>
+        <button onclick="copyRefLink()" class="btn-gold px-4 py-2 text-[9px] whitespace-nowrap">КОПИРОВАТЬ</button>
     </div>
+    <p class="text-[8px] text-gray-500 uppercase mt-3 tracking-widest text-center">За каждого друга, который впервые запустит бота по вашей ссылке — 1 билет 🎫</p>
 </section>
         
         <section class="glass-card p-6 min-h-[300px]">
@@ -192,6 +192,9 @@ const ADMIN_ID = '8015661230';
 const SUPABASE_URL = 'https://ypvvoqbvzfmirprevazq.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ⚠️ Замени на username своего бота (без @)
+const BOT_USERNAME = 'Dimkalox3330_bot';
 
 const ITEMS = {
     "1may.jpg": { name: "1 May Exclusive", price: 100 },
@@ -290,6 +293,7 @@ async function loadUser() {
             document.getElementById('u-tickets').innerText = user.tickets || 0;
             document.getElementById('ref-count').innerText = user.referral_count || 0;
             document.getElementById('u-id-label').innerText = `ID: ${user.user_id}`;
+            document.getElementById('ref-link-text').innerText = `https://t.me/${BOT_USERNAME}?start=ref_${userId}`;
             renderGrid();
             renderGifts(); 
         } else {
@@ -579,7 +583,7 @@ function closeModal() {
 }
 
 function copyRefLink() {
-    const refLink = `https://t.me/your_bot_username?start=ref_${userId}`;
+    const refLink = `https://t.me/${BOT_USERNAME}?start=ref_${userId}`;
     navigator.clipboard.writeText(refLink).then(() => {
         tg.showAlert("📋 Реферальная ссылка скопирована!");
     }).catch(() => {

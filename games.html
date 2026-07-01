@@ -40,14 +40,16 @@
         /* ===== КАРТОЧКА ===== */
         .game-card {
             position: relative; border-radius: 22px; overflow: hidden;
-            margin-bottom: 16px; height: 120px;
+            margin-bottom: 16px; height: 140px;
             display: flex; align-items: center;
             cursor: pointer;
-            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            transition: transform 0.18s ease;
         }
         .game-card:active { transform: scale(0.972); }
 
-        /* анимированная граница через псевдоэлемент */
+        @property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        @keyframes spin-border { to { --angle: 360deg; } }
+
         .game-card::before {
             content: '';
             position: absolute; inset: -1.5px;
@@ -61,62 +63,45 @@
             );
             animation: spin-border 3s linear infinite;
         }
-        @property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-        @keyframes spin-border { to { --angle: 360deg; } }
 
-        /* внутренний фон */
         .card-inner {
             position: absolute; inset: 1.5px;
-            border-radius: 21px;
-            overflow: hidden;
-            z-index: 1;
-            display: flex; align-items: center;
+            border-radius: 21px; overflow: hidden;
+            z-index: 1; display: flex; align-items: center;
         }
 
-        /* фоновый цвет + свечение */
-        .card-bg {
-            position: absolute; inset: 0;
-            background-size: cover; background-position: center;
-        }
-        /* тёмный градиент: левая часть тёмная, правая прозрачная (видна картинка) */
+        .card-bg { position: absolute; inset: 0; }
         .card-bg::after {
             content: ''; position: absolute; inset: 0;
             background: linear-gradient(
                 100deg,
                 rgba(10,8,3,0.97) 0%,
-                rgba(10,8,3,0.88) 40%,
-                rgba(10,8,3,0.45) 68%,
+                rgba(10,8,3,0.88) 38%,
+                rgba(10,8,3,0.35) 65%,
                 rgba(10,8,3,0.0) 100%
             );
         }
 
-        /* мерцающий shimmer при нажатии */
         .card-shimmer {
             position: absolute; inset: 0; z-index: 5; pointer-events: none;
             background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%);
-            background-size: 200% 100%;
-            opacity: 0;
-            transition: opacity 0.1s;
+            opacity: 0; transition: opacity 0.1s;
         }
         .game-card:active .card-shimmer { opacity: 1; }
 
-        /* картинка справа */
+        /* картинка — позиционируем каждую индивидуально */
         .card-img {
-            position: absolute; right: 0; top: 0; bottom: 0;
-            width: 52%;
-            object-fit: cover; object-position: center;
+            position: absolute;
+            object-fit: contain;
             z-index: 2;
-            mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
-            -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+            pointer-events: none;
         }
 
-        /* левая полоска */
         .card-stripe {
             position: absolute; left: 0; top: 16px; bottom: 16px;
             width: 3px; border-radius: 0 3px 3px 0; z-index: 6;
         }
 
-        /* текст */
         .card-body {
             position: relative; z-index: 6;
             padding: 0 16px; flex: 1;
@@ -125,22 +110,18 @@
             display: inline-block;
             font-size: 9px; font-weight: 900; text-transform: uppercase;
             letter-spacing: 0.8px; padding: 2px 8px; border-radius: 20px;
-            margin-bottom: 5px; border: 1px solid currentColor;
-            opacity: 0.85;
+            margin-bottom: 6px; border: 1px solid currentColor; opacity: 0.9;
         }
         .new-badge {
             background: linear-gradient(135deg, #9333ea, #ec4899);
             color: #fff; border: none !important; opacity: 1 !important;
         }
         .card-title {
-            font-size: 1.2rem; font-weight: 900; line-height: 1.2;
-            margin-bottom: 4px; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            font-size: 1.25rem; font-weight: 900; line-height: 1.2;
+            margin-bottom: 4px; text-shadow: 0 2px 8px rgba(0,0,0,0.9);
         }
-        .card-desc {
-            font-size: 11.5px; color: rgba(255,255,255,0.5); font-weight: 500;
-        }
+        .card-desc { font-size: 11.5px; color: rgba(255,255,255,0.5); font-weight: 500; }
 
-        /* ===== ЧАСТИЦЫ ===== */
         .particles { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
         .particle {
             position: absolute; border-radius: 50%;
@@ -177,7 +158,10 @@
         <div class="card-inner">
             <div class="card-bg" style="background:#120820;"></div>
             <div class="particles" id="p-rolls"></div>
-            <img class="card-img" src="rolls.png" onerror="this.style.display='none'">
+            <!-- rolls: по центру справа -->
+            <img class="card-img" src="img/mini%20games%20img/rolls.png"
+                 onerror="this.style.display='none'"
+                 style="right:-10px; top:50%; transform:translateY(-50%); height:130px; width:auto;">
             <div class="card-stripe" style="background:linear-gradient(180deg,#9333ea,#ec4899)"></div>
             <div class="card-body">
                 <div class="card-tag new-badge">NEW</div>
@@ -193,7 +177,10 @@
         <div class="card-inner">
             <div class="card-bg" style="background:#071510;"></div>
             <div class="particles" id="p-mines"></div>
-            <img class="card-img" src="img/mini%20games%20img/mines.png" onerror="this.style.display='none'">
+            <!-- mines: поднять вверх и левее -->
+            <img class="card-img" src="img/mini%20games%20img/mines.png"
+                 onerror="this.style.display='none'"
+                 style="right:0px; top:-10px; height:150px; width:auto;">
             <div class="card-stripe" style="background:linear-gradient(180deg,#22c55e,#15803d)"></div>
             <div class="card-body">
                 <div class="card-tag" style="color:#22c55e">Классика</div>
@@ -209,7 +196,10 @@
         <div class="card-inner">
             <div class="card-bg" style="background:#060a18;"></div>
             <div class="particles" id="p-plinko"></div>
-            <img class="card-img" src="img/mini%20games%20img/plinko.png" onerror="this.style.display='none'">
+            <!-- plinko: левее -->
+            <img class="card-img" src="img/mini%20games%20img/plinko.png"
+                 onerror="this.style.display='none'"
+                 style="right:20px; top:50%; transform:translateY(-50%); height:135px; width:auto;">
             <div class="card-stripe" style="background:linear-gradient(180deg,#3b82f6,#1d4ed8)"></div>
             <div class="card-body">
                 <div class="card-tag" style="color:#60a5fa">Популярно</div>
@@ -225,7 +215,10 @@
         <div class="card-inner">
             <div class="card-bg" style="background:#120e00;"></div>
             <div class="particles" id="p-catcher"></div>
-            <img class="card-img" src="img/mini%20games%20img/catcher.png" onerror="this.style.display='none'">
+            <!-- catcher: по центру справа -->
+            <img class="card-img" src="img/mini%20games%20img/catcher.png"
+                 onerror="this.style.display='none'"
+                 style="right:-5px; top:50%; transform:translateY(-50%); height:145px; width:auto;">
             <div class="card-stripe" style="background:linear-gradient(180deg,#d4af37,#b8860b)"></div>
             <div class="card-body">
                 <div class="card-tag" style="color:#d4af37">100 ⭐ вход</div>
@@ -261,30 +254,24 @@
         } catch(e) { console.error(e); alert("Ошибка сервера"); }
     }
 
-    /* ===== ЧАСТИЦЫ ===== */
     function spawnParticles(containerId, color) {
         const el = document.getElementById(containerId);
         if (!el) return;
         const W = el.offsetWidth || 340;
-        const H = el.offsetHeight || 120;
-        const count = 10;
-        for (let i = 0; i < count; i++) {
+        const H = el.offsetHeight || 140;
+        for (let i = 0; i < 10; i++) {
             const p = document.createElement('div');
             p.className = 'particle';
             const size = Math.random() * 4 + 2;
-            const delay = Math.random() * 2.5;
-            const dur = (Math.random() * 2 + 2).toFixed(1);
-            const sx = Math.random() * W;
-            const sy = Math.random() * H;
-            const tx = (Math.random() - 0.5) * 60;
-            const ty = -(Math.random() * 50 + 20);
-            const op = (Math.random() * 0.45 + 0.2).toFixed(2);
             p.style.cssText = `
                 width:${size}px; height:${size}px; background:${color};
-                left:${sx}px; top:${sy}px;
-                --dur:${dur}s; --tx:${tx}px; --ty:${ty}px; --op:${op};
-                animation-delay:${delay}s;
-                box-shadow: 0 0 ${size*2}px ${color};
+                left:${Math.random()*W}px; top:${Math.random()*H}px;
+                --dur:${(Math.random()*2+2).toFixed(1)}s;
+                --tx:${((Math.random()-0.5)*60).toFixed(0)}px;
+                --ty:${-(Math.random()*50+20).toFixed(0)}px;
+                --op:${(Math.random()*0.45+0.2).toFixed(2)};
+                animation-delay:${(Math.random()*2.5).toFixed(1)}s;
+                box-shadow:0 0 ${size*2}px ${color};
             `;
             el.appendChild(p);
         }

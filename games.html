@@ -6,167 +6,294 @@
     <title>NowearSpin Hub</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        
-        :root {
-            --bg: #0d0a05;
-            --accent: #d4af37;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');
+
+        :root { --bg: #0d0a05; --accent: #d4af37; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            background-color: var(--bg);
-            color: white;
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+            background: var(--bg); color: white; font-family: 'Inter', sans-serif;
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
 
         header {
-            background: #0d0a05;
-            border-bottom: 2px solid rgba(212, 175, 55, 0.3);
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            position: relative;
-            z-index: 100;
-            height: 65px;
+            background: #0d0a05; border-bottom: 2px solid rgba(212,175,55,0.3);
+            padding: 12px 20px; display: flex; align-items: center; gap: 12px;
+            height: 65px; flex-shrink: 0;
         }
-
-        .logo { 
-            font-weight: 900; 
-            font-size: 1.4rem; 
-            text-transform: uppercase; 
-            font-style: italic;
-            margin-left: 12px;
+        .logo { font-weight: 900; font-size: 1.4rem; text-transform: uppercase; font-style: italic; }
+        .back-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #111; border: 1px solid rgba(212,175,55,0.3);
+            flex-shrink: 0; text-decoration: none;
         }
+        .back-btn:active { transform: scale(0.9); }
 
         .games-list {
-            flex: 1;
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-            -webkit-overflow-scrolling: touch;
+            flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: 16px 16px 30px;
         }
+        .games-list::-webkit-scrollbar { display: none; }
 
+        /* ===== КАРТОЧКА ===== */
         .game-card {
-            height: calc(100vh - 65px);
-            scroll-snap-align: start;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .image-container {
-            width: 250px;
-            height: 250px;
-            background: radial-gradient(circle, rgba(212, 175, 55, 0.2) 0%, transparent 70%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .game-img {
-            width: 90%;
-            filter: drop-shadow(0 0 25px var(--accent));
-        }
-
-        .btn-play {
-            background: var(--accent);
-            color: #0d0a05;
-            font-weight: 900;
-            padding: 16px 70px;
-            border-radius: 18px;
-            text-transform: uppercase;
-            font-size: 1.2rem;
-            box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
-            border: none;
+            position: relative; border-radius: 22px; overflow: hidden;
+            margin-bottom: 16px; height: 120px;
+            display: flex; align-items: center;
             cursor: pointer;
-            margin-top: 50px; /* Кнопки стали ниже */
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .game-card:active { transform: scale(0.972); }
+
+        /* анимированная граница через псевдоэлемент */
+        .game-card::before {
+            content: '';
+            position: absolute; inset: -1.5px;
+            border-radius: 23px;
+            z-index: 0;
+            background: conic-gradient(
+                from var(--angle, 0deg),
+                transparent 60%,
+                var(--glow) 80%,
+                transparent 100%
+            );
+            animation: spin-border 3s linear infinite;
+        }
+        @property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        @keyframes spin-border { to { --angle: 360deg; } }
+
+        /* внутренний фон */
+        .card-inner {
+            position: absolute; inset: 1.5px;
+            border-radius: 21px;
+            overflow: hidden;
+            z-index: 1;
+            display: flex; align-items: center;
         }
 
-        .btn-play:active { transform: scale(0.95); }
-        .games-list::-webkit-scrollbar { width: 0px; }
+        /* фоновый цвет + свечение */
+        .card-bg {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center;
+        }
+        /* тёмный градиент: левая часть тёмная, правая прозрачная (видна картинка) */
+        .card-bg::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(
+                100deg,
+                rgba(10,8,3,0.97) 0%,
+                rgba(10,8,3,0.88) 40%,
+                rgba(10,8,3,0.45) 68%,
+                rgba(10,8,3,0.0) 100%
+            );
+        }
+
+        /* мерцающий shimmer при нажатии */
+        .card-shimmer {
+            position: absolute; inset: 0; z-index: 5; pointer-events: none;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%);
+            background-size: 200% 100%;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+        .game-card:active .card-shimmer { opacity: 1; }
+
+        /* картинка справа */
+        .card-img {
+            position: absolute; right: 0; top: 0; bottom: 0;
+            width: 52%;
+            object-fit: cover; object-position: center;
+            z-index: 2;
+            mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+            -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+        }
+
+        /* левая полоска */
+        .card-stripe {
+            position: absolute; left: 0; top: 16px; bottom: 16px;
+            width: 3px; border-radius: 0 3px 3px 0; z-index: 6;
+        }
+
+        /* текст */
+        .card-body {
+            position: relative; z-index: 6;
+            padding: 0 16px; flex: 1;
+        }
+        .card-tag {
+            display: inline-block;
+            font-size: 9px; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 0.8px; padding: 2px 8px; border-radius: 20px;
+            margin-bottom: 5px; border: 1px solid currentColor;
+            opacity: 0.85;
+        }
+        .new-badge {
+            background: linear-gradient(135deg, #9333ea, #ec4899);
+            color: #fff; border: none !important; opacity: 1 !important;
+        }
+        .card-title {
+            font-size: 1.2rem; font-weight: 900; line-height: 1.2;
+            margin-bottom: 4px; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+        }
+        .card-desc {
+            font-size: 11.5px; color: rgba(255,255,255,0.5); font-weight: 500;
+        }
+
+        /* ===== ЧАСТИЦЫ ===== */
+        .particles { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+        .particle {
+            position: absolute; border-radius: 50%;
+            animation: float-particle var(--dur) ease-in-out infinite;
+            opacity: 0;
+        }
+        @keyframes float-particle {
+            0%   { transform: translate(0,0) scale(0.5); opacity: 0; }
+            20%  { opacity: var(--op); }
+            80%  { opacity: var(--op); }
+            100% { transform: translate(var(--tx), var(--ty)) scale(1.2); opacity: 0; }
+        }
     </style>
 </head>
 <body>
 
-    <header>
-        <a href="index.html" class="flex items-center justify-center w-8 h-8 rounded-full bg-[#111] border border-[rgba(212,175,55,0.3)] active:scale-90 transition-transform flex-shrink-0">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
-        </a>
-        
-        <div class="logo">
-            <span class="text-[#d4af37]">NOWEAR</span><span class="text-white">SPIN</span>
+<header>
+    <a href="index.html" class="back-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d4af37"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+    </a>
+    <div class="logo">
+        <span style="color:#d4af37">NOWEAR</span><span>SPIN</span>
+    </div>
+</header>
+
+<div class="games-list">
+
+    <!-- ROLLS -->
+    <div class="game-card" style="--glow:#9333ea" onclick="launch('rolls.html')">
+        <div class="card-inner">
+            <div class="card-bg" style="background:#120820;"></div>
+            <div class="particles" id="p-rolls"></div>
+            <img class="card-img" src="rolls.png" onerror="this.style.display='none'">
+            <div class="card-stripe" style="background:linear-gradient(180deg,#9333ea,#ec4899)"></div>
+            <div class="card-body">
+                <div class="card-tag new-badge">NEW</div>
+                <div class="card-title">Rolls</div>
+                <div class="card-desc">Ставь и крути колесо</div>
+            </div>
+            <div class="card-shimmer"></div>
         </div>
-    </header>
-
-    <div class="games-list">
-
-        <section class="game-card">
-            <div class="image-container">
-                <img src="mine.png" class="game-img">
-            </div>
-            <button onclick="launch('mines.html')" class="btn-play">Играть</button>
-        </section>
-
-        <section class="game-card">
-            <div class="image-container">
-                <img src="plinko.png" class="game-img">
-            </div>
-            <button onclick="launch('plinko.html')" class="btn-play">Играть</button>
-        </section>
-
-<section class="game-card">
-    <div class="image-container">
-        <img src="catcher.jpeg" class="game-img" alt="Игра">
     </div>
-    <button onclick="launchWithPayment('Lovlyagift.html')" class="btn-play">Играть</button>
-</section>
 
+    <!-- MINES -->
+    <div class="game-card" style="--glow:#22c55e" onclick="launch('mines.html')">
+        <div class="card-inner">
+            <div class="card-bg" style="background:#071510;"></div>
+            <div class="particles" id="p-mines"></div>
+            <img class="card-img" src="img/mini%20games%20img/mines.png" onerror="this.style.display='none'">
+            <div class="card-stripe" style="background:linear-gradient(180deg,#22c55e,#15803d)"></div>
+            <div class="card-body">
+                <div class="card-tag" style="color:#22c55e">Классика</div>
+                <div class="card-title">Mines</div>
+                <div class="card-desc">Найди алмаз, обойди мины</div>
+            </div>
+            <div class="card-shimmer"></div>
+        </div>
     </div>
+
+    <!-- PLINKO -->
+    <div class="game-card" style="--glow:#3b82f6" onclick="launch('plinko.html')">
+        <div class="card-inner">
+            <div class="card-bg" style="background:#060a18;"></div>
+            <div class="particles" id="p-plinko"></div>
+            <img class="card-img" src="img/mini%20games%20img/plinko.png" onerror="this.style.display='none'">
+            <div class="card-stripe" style="background:linear-gradient(180deg,#3b82f6,#1d4ed8)"></div>
+            <div class="card-body">
+                <div class="card-tag" style="color:#60a5fa">Популярно</div>
+                <div class="card-title">Plinko</div>
+                <div class="card-desc">Брось шарик, поймай множитель</div>
+            </div>
+            <div class="card-shimmer"></div>
+        </div>
+    </div>
+
+    <!-- CATCHER -->
+    <div class="game-card" style="--glow:#d4af37" onclick="launchWithPayment('Lovlyagift.html')">
+        <div class="card-inner">
+            <div class="card-bg" style="background:#120e00;"></div>
+            <div class="particles" id="p-catcher"></div>
+            <img class="card-img" src="img/mini%20games%20img/catcher.png" onerror="this.style.display='none'">
+            <div class="card-stripe" style="background:linear-gradient(180deg,#d4af37,#b8860b)"></div>
+            <div class="card-body">
+                <div class="card-tag" style="color:#d4af37">100 ⭐ вход</div>
+                <div class="card-title">Catcher</div>
+                <div class="card-desc">Лови подарки и TON</div>
+            </div>
+            <div class="card-shimmer"></div>
+        </div>
+    </div>
+
+</div>
 
 <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        const SB = supabase.createClient("https://ypvvoqbvzfmirprevazq.supabase.co", "sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz");
-        const userId = tg.initDataUnsafe?.user?.id;
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    const SB = supabase.createClient(
+        "https://ypvvoqbvzfmirprevazq.supabase.co",
+        "sb_publishable_nG0LGd9T2s1aOM6eTRdoJQ_DPwkMvXz"
+    );
+    const userId = tg.initDataUnsafe?.user?.id;
 
-        async function launchWithPayment(file) {
-            if (!userId) { alert("Ошибка авторизации"); return; }
-            try {
-                const { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
-                if ((data?.stars || 0) < 100) {
-                    alert("Недостаточно звезд! Нужно 100.");
-                    return;
-                }
-                if (confirm("Вход в игру стоит 100 звезд. Продолжить?")) {
-                    await SB.from('users').update({ stars: data.stars - 100 }).eq('user_id', userId);
-                    window.location.replace("./" + file);
-                }
-            } catch (e) {
-                console.error(e);
-                alert("Ошибка сервера");
+    function launch(url) { window.location.href = url; }
+
+    async function launchWithPayment(file) {
+        if (!userId) { alert("Ошибка авторизации"); return; }
+        try {
+            const { data } = await SB.from('users').select('stars').eq('user_id', userId).single();
+            if ((data?.stars || 0) < 100) { alert("Недостаточно звезд! Нужно 100."); return; }
+            if (confirm("Вход в игру стоит 100 звезд. Продолжить?")) {
+                await SB.from('users').update({ stars: data.stars - 100 }).eq('user_id', userId);
+                window.location.replace("./" + file);
             }
-        }
-
-    function launch(url) {
-        window.location.href = url;
+        } catch(e) { console.error(e); alert("Ошибка сервера"); }
     }
 
-        function launchDirect(file) {
-            window.location.replace("./" + file);
+    /* ===== ЧАСТИЦЫ ===== */
+    function spawnParticles(containerId, color) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        const W = el.offsetWidth || 340;
+        const H = el.offsetHeight || 120;
+        const count = 10;
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size = Math.random() * 4 + 2;
+            const delay = Math.random() * 2.5;
+            const dur = (Math.random() * 2 + 2).toFixed(1);
+            const sx = Math.random() * W;
+            const sy = Math.random() * H;
+            const tx = (Math.random() - 0.5) * 60;
+            const ty = -(Math.random() * 50 + 20);
+            const op = (Math.random() * 0.45 + 0.2).toFixed(2);
+            p.style.cssText = `
+                width:${size}px; height:${size}px; background:${color};
+                left:${sx}px; top:${sy}px;
+                --dur:${dur}s; --tx:${tx}px; --ty:${ty}px; --op:${op};
+                animation-delay:${delay}s;
+                box-shadow: 0 0 ${size*2}px ${color};
+            `;
+            el.appendChild(p);
         }
-    </script>
+    }
+
+    spawnParticles('p-rolls',   '#c084fc');
+    spawnParticles('p-mines',   '#4ade80');
+    spawnParticles('p-plinko',  '#60a5fa');
+    spawnParticles('p-catcher', '#fcd34d');
+</script>
 </body>
 </html>
